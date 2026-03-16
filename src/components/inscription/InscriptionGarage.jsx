@@ -1,192 +1,158 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { registerGarage } from "../../services/api";
 
 function RegisterGarage() {
-
     const [form, setForm] = useState({
         nom_garage: "",
-        telephone: "",
         email: "",
+        telephone: "",
+        adresse: "",
         siret: "",
         tva: "",
-        adresse: "",
-        cp: "",
+        mdp: "",
         ville: "",
         code_insee: "",
-        id_ville: "",
-        mdp: ""
+        cp: "",
+        img_garage: "",
+        img_logo: "",
+        id_ville: null
     });
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-
-    const [cpSuggestions, setCpSuggestions] = useState([]);
-    const [villeSuggestions, setVilleSuggestions] = useState([]);
-    const [adresseSuggestions, setAdresseSuggestions] = useState([]);
+    const [cp, setCp] = useState([]);
+    const [adresse, setAdresse] = useState([]);
+    const [ville, setVille] = useState([]);
+    const [message, setMessage] = useState("");
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    /* AUTOCOMPLETE CODE POSTAL */
-
+    // AUTOCOMPLETE CODE POSTAL
     const searchCP = async (value) => {
-
         setForm({ ...form, cp: value });
-
         if (value.length < 2) return;
 
-        const res = await fetch(
-            `https://data.geopf.fr/geocodage/search/?postcode=${value}&limit=10`
-        );
-
+        const res = await fetch(`https://data.geopf.fr/geocodage/search/?postcode=${value}&limit=10`);
         const data = await res.json();
-
         const results = data.features.map((item) => ({
             cp: item.properties.postcode,
             city: item.properties.city,
-            insee: item.properties.citycode
+            insee: item.properties.citycode,
+            id_ville: item.properties.citycode
         }));
-
-        setCpSuggestions(results);
+        setCp(results);
     };
 
-    /* AUTOCOMPLETE VILLE */
-
+    // AUTOCOMPLETE VILLE
     const searchVille = async (value) => {
-
         setForm({ ...form, ville: value });
-
         if (value.length < 2) return;
 
-        const res = await fetch(
-            `https://data.geopf.fr/geocodage/search/?city=${value}&limit=10`
-        );
-
+        const res = await fetch(`https://data.geopf.fr/geocodage/search/?city=${value}&limit=10`);
         const data = await res.json();
-
         const results = data.features.map((item) => ({
             cp: item.properties.postcode,
             city: item.properties.city,
-            insee: item.properties.citycode
+            insee: item.properties.citycode,
+            id_ville: item.properties.citycode
         }));
-
-        setVilleSuggestions(results);
+        setVille(results);
     };
 
-    /* AUTOCOMPLETE ADRESSE */
 
+    // AUTOCOMPLETE ADRESSE
     const searchAdresse = async (value) => {
-
         setForm({ ...form, adresse: value });
-
         if (value.length < 3) return;
 
-        const res = await fetch(
-            `https://data.geopf.fr/geocodage/search/?postcode=${form.cp}&q=${value}&limit=10`
-        );
-
+        const res = await fetch(`https://data.geopf.fr/geocodage/search/?postcode=${form.cp}&q=${value}&limit=10`);
         const data = await res.json();
-
         const results = data.features.map((item) => ({
             name: item.properties.name,
             cp: item.properties.postcode,
             city: item.properties.city,
-            insee: item.properties.citycode
+            insee: item.properties.citycode,
+            id_ville: item.properties.citycode
         }));
-
-        setAdresseSuggestions(results);
+        setAdresse(results);
     };
 
-    /* SUBMIT FORM */
-
+    // SUBMIT FORM
     const handleSubmit = async (e) => {
-
         e.preventDefault();
-        setError("");
-        setSuccess("");
 
-        if (!form.id_ville) {
-            setError("L'identifiant de la ville est requis (id_ville).");
+        // Vérifier si le garage existe
+        const checkResponse = await fetch(
+            `http://127.0.0.1:8000/api/v1/check_garage/${form.siret}`
+        );
+        const checkGarage = await checkResponse.json();
+
+        if (checkGarage.exists) {
+            setMessage("Ce garage est déjà inscrit. Les informations ont été récupérées.");
             return;
         }
 
-        setLoading(true);
+        const payload = {
+            nom_garage: form.nom_garage,
+            telephone_garage: form.telephone_garage,
+            email: form.email_garage,
+            siret: form.siret,
+            tva: form.tva,
+            adresse: form.adresse,
+            cp: form.cp,
+            ville: form.ville,
+            code_insee: form.code_insee,
+            mdp: form.mdp,
+            img_garage: form.img_garage,
+            img_logo: form.img_logo
+        };
 
-        try {
-            await registerGarage({
-                nom_garage: form.nom_garage,
-                email: form.email,
-                telephone: form.telephone,
-                adresse: form.adresse,
-                siret: form.siret,
-                tva: form.tva,
-                id_ville: Number(form.id_ville),
-                mdp: form.mdp
-            });
+        const response = await fetch("http://127.0.0.1:8000/api/v1/users/inscrire-garage", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
 
-            setSuccess("Garage ajoute avec succes.");
+        if (response.ok) {
+            setMessage("Garage inscrit avec succès !");
             setForm({
                 nom_garage: "",
-                telephone: "",
-                email: "",
+                telephone_garage: "",
+                email_garage: "",
                 siret: "",
                 tva: "",
                 adresse: "",
                 cp: "",
                 ville: "",
                 code_insee: "",
-                id_ville: "",
-                mdp: ""
+                mdp: "",
+                img_garage: "",
+                img_logo: ""
             });
-        } catch (err) {
-            setError(err.message || "Inscription garage impossible");
-        } finally {
-            setLoading(false);
+        } else {
+            setMessage("Erreur lors de l'inscription");
         }
     };
-
     return (
         <div className="container mt-5">
             <h2>Inscription Garage</h2>
-
-            {error && <div className="alert alert-danger">{error}</div>}
-            {success && <div className="alert alert-success">{success}</div>}
+            {message && <div className="alert alert-info">{message}</div>}
 
             <form onSubmit={handleSubmit}>
-
-                <input className="form-control mb-3" placeholder="Nom du garage" name="nom_garage" onChange={handleChange} />
-                <input className="form-control mb-3" placeholder="Telephone" name="telephone" onChange={handleChange} value={form.telephone} />
+                <input className="form-control mb-3" placeholder="Nom du garage" name="nom_garage" onChange={handleChange} value={form.nom_garage} />
+                <input className="form-control mb-3" placeholder="Téléphone" name="telephone" onChange={handleChange} value={form.telephone} />
                 <input className="form-control mb-3" placeholder="Email" name="email" onChange={handleChange} value={form.email} />
-                <input className="form-control mb-3" placeholder="SIRET" name="siret" onChange={handleChange} />
-                <input className="form-control mb-3" placeholder="TVA" name="tva" onChange={handleChange} />
+                <input className="form-control mb-3" placeholder="SIRET" name="siret" onChange={handleChange} value={form.siret} />
+                <input className="form-control mb-3" placeholder="TVA" name="tva" onChange={handleChange} value={form.tva} />
                 <input className="form-control mb-3" placeholder="Mot de passe" type="password" name="mdp" onChange={handleChange} value={form.mdp} />
 
                 {/* ADRESSE */}
-
-                <input
-                    className="form-control mt-3"
-                    placeholder="Adresse"
-                    value={form.adresse}
-                    name="adresse"
-                    onChange={(e) => searchAdresse(e.target.value)}
-                />
-
-                {adresseSuggestions.map((item, index) => (
-                    <div
-                        key={index}
-                        className="list-group-item"
+                <input className="form-control mt-3" placeholder="Adresse" value={form.adresse} onChange={(e) => searchAdresse(e.target.value)} />
+                {adresse.map((item, index) => (
+                    <div key={index} className="list-group-item"
                         onClick={() => {
-                            setForm({
-                                ...form,
-                                adresse: item.name,
-                                cp: item.cp,
-                                ville: item.city,
-                                code_insee: item.insee
-                            });
-                            setAdresseSuggestions([]);
+                            setForm({ ...form, adresse: item.name, cp: item.cp, ville: item.city, code_insee: item.insee, id_ville: item.id_ville });
+                            setAdresse([]);
                         }}
                     >
                         {item.name} - {item.cp} - {item.city}
@@ -194,27 +160,12 @@ function RegisterGarage() {
                 ))}
 
                 {/* CODE POSTAL */}
-
-                <input
-                    className="form-control"
-                    placeholder="Code postal"
-                    name="cp"
-                    value={form.cp}
-                    onChange={(e) => searchCP(e.target.value)}
-                />
-
-                {cpSuggestions.map((item, index) => (
-                    <div
-                        key={index}
-                        className="list-group-item"
+                <input className="form-control mt-3" placeholder="Code postal" value={form.cp} onChange={(e) => searchCP(e.target.value)} />
+                {cp.map((item, index) => (
+                    <div key={index} className="list-group-item"
                         onClick={() => {
-                            setForm({
-                                ...form,
-                                cp: item.cp,
-                                ville: item.city,
-                                code_insee: item.insee
-                            });
-                            setCpSuggestions([]);
+                            setForm({ ...form, cp: item.cp, ville: item.city, code_insee: item.insee, id_ville: item.id_ville });
+                            setCp([]);
                         }}
                     >
                         {item.cp} - {item.city}
@@ -222,48 +173,24 @@ function RegisterGarage() {
                 ))}
 
                 {/* VILLE */}
-
-                <input
-                    className="form-control mt-3"
-                    placeholder="Ville"
-                    name="ville"
-                    value={form.ville}
-                    onChange={(e) => searchVille(e.target.value)}
-                />
-
-                {villeSuggestions.map((item, index) => (
-                    <div
-                        key={index}
-                        className="list-group-item"
+                <input className="form-control mt-3" placeholder="Ville" value={form.ville} onChange={(e) => searchVille(e.target.value)} />
+                {ville.map((item, index) => (
+                    <div key={index} className="list-group-item"
                         onClick={() => {
-                            setForm({
-                                ...form,
-                                ville: item.city,
-                                cp: item.cp,
-                                code_insee: item.insee
-                            });
-                            setVilleSuggestions([]);
+                            setForm({ ...form, ville: item.city, cp: item.cp, code_insee: item.insee, id_ville: item.id_ville });
+                            setVille([]);
                         }}
                     >
                         {item.cp} - {item.city}
                     </div>
                 ))}
 
-                {/* INPUT HIDDEN CODE INSEE */}
-
+                {/* HIDDEN CODE INSEE */}
                 <input type="hidden" name="code_insee" value={form.code_insee} />
-                <input
-                    className="form-control mt-3"
-                    placeholder="ID Ville (requis par l'API)"
-                    name="id_ville"
-                    value={form.id_ville}
-                    onChange={handleChange}
-                />
 
-                <button className="btn btn-primary mt-4" disabled={loading}>
-                    {loading ? "Inscription..." : "Inscription"}
+                <button type="submit" className="btn btn-primary mt-4" >
+                    Inscription
                 </button>
-
             </form>
         </div>
     );
