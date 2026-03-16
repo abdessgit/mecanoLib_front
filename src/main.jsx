@@ -5,6 +5,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import './index.css'
 import App from './App.jsx'
 import InscriptiondGarage from './components/inscription/InscriptionGarage.jsx';
+
+
 createRoot(document.getElementById('root')).render(
     <StrictMode>
         <BrowserRouter>
