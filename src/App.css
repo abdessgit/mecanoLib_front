@@ -1,20 +1,46 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+/* ── Hero ── */
+.hero-section {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+  padding: 100px 0;
+  position: relative;
+  overflow: hidden;
+}
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 60% 50%, rgba(255, 193, 7, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Features ── */
+.feature-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1) !important;
+}
+
+.feature-icon {
+  font-size: 2.8rem;
+}
+
+/* ── CTA ── */
+.cta-section {
+  background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+}
+
+/* ── Footer links ── */
+.footer-link {
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: #ffc107 !important;
 }
 
 .hero {
