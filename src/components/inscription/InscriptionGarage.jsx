@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function RegisterGarage() {
@@ -21,7 +21,10 @@ function RegisterGarage() {
     const [cp, setCp] = useState([]);
     const [adresse, setAdresse] = useState([]);
     const [ville, setVille] = useState([]);
+    const [loadingSiret, setLoadingSiret] = useState(false);
     const [message, setMessage] = useState("");
+    const [siretValid, setSiretValid] = useState(false);
+    const lastSiret = useRef("");
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -76,61 +79,139 @@ function RegisterGarage() {
         }));
         setAdresse(results);
     };
+    // verifecation siret 
+    const checkSiretAPI = async (value) => {
+        setForm((prev) => ({ ...prev, siret: value }));
 
-    // SUBMIT FORM
+        lastSiret.current = value;
+
+        setMessage("");
+        setSiretValid(false);
+
+        if (value.length !== 14) return;
+
+        setLoadingSiret(true);
+
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/v1/check_siret_insee/${value}`);
+            const result = await res.json();
+
+            if (lastSiret.current !== value) return;
+
+            if (!result.exists) {
+                setMessage("SIRET introuvable");
+                setSiretValid(false);
+                setLoadingSiret(false);
+                return;
+            }
+
+            // AUTO FILL
+            setForm((prev) => ({
+                ...prev,
+                nom_garage: result.nom || "",
+                adresse: result.adresse || "",
+                ville: result.ville || "",
+                cp: result.code_postal || "",
+                code_insee: result.code_insee || "",
+                date_fermeture: result.date_fermeture
+
+            }));
+
+
+            setSiretValid(true);
+
+
+
+        } catch (err) {
+            setMessage("Erreur API");
+            setSiretValid(false);
+        }
+
+        setLoadingSiret(false);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Vérifier si le garage existe
-        const checkResponse = await fetch(
-            `http://127.0.0.1:8000/api/v1/check_garage/${form.siret}`
-        );
-        const checkGarage = await checkResponse.json();
 
-        if (checkGarage.exists) {
-            setMessage("Ce garage est déjà inscrit. Les informations ont été récupérées.");
+        if (!form.siret || !siretValid) {
+            setMessage("SIRET invalide");
             return;
         }
 
-        const payload = {
-            nom_garage: form.nom_garage,
-            telephone_garage: form.telephone_garage,
-            email: form.email_garage,
-            siret: form.siret,
-            tva: form.tva,
-            adresse: form.adresse,
-            cp: form.cp,
-            ville: form.ville,
-            code_insee: form.code_insee,
-            mdp: form.mdp,
-            img_garage: form.img_garage,
-            img_logo: form.img_logo
-        };
 
-        const response = await fetch("http://127.0.0.1:8000/api/v1/users/inscrire-garage", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
 
-        if (response.ok) {
-            setMessage("Garage inscrit avec succès !");
-            setForm({
-                nom_garage: "",
-                telephone_garage: "",
-                email_garage: "",
-                siret: "",
-                tva: "",
-                adresse: "",
-                cp: "",
-                ville: "",
-                code_insee: "",
-                mdp: "",
-                img_garage: "",
-                img_logo: ""
-            });
-        } else {
-            setMessage("Erreur lors de l'inscription");
+        try {
+            const payload = {
+                nom_garage: form.nom_garage,
+                email: form.email,
+                telephone: form.telephone,
+                adresse: form.adresse,
+                siret: form.siret,
+                tva: form.tva,
+                mdp: form.mdp,
+                ville: form.ville,
+                code_insee: form.code_insee,
+                cp: form.cp,
+                img_garage: form.img_garage,
+                img_logo: form.img_logo
+            };
+
+            const response = await fetch(
+                "http://127.0.0.1:8000/api/v1/users/inscrire-garage",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                }
+            );
+
+            const text = await response.text();
+
+            let data = null;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.log("Réponse non JSON");
+            }
+
+            if (response.ok) {
+                setMessage(data?.message || "Garage créé avec succès");
+
+                setForm({
+                    nom_garage: "",
+                    email: "",
+                    telephone: "",
+                    siret: "",
+                    tva: "",
+                    adresse: "",
+                    cp: "",
+                    ville: "",
+                    code_insee: "",
+                    mdp: "",
+                    img_garage: "",
+                    img_logo: "",
+                    id_ville: null
+                });
+
+                // 🔥 reset validation SIRET
+                setSiretValid(false);
+                setMessage("");
+
+            } else {
+                setMessage(
+                    data?.message ||
+                    data?.error ||
+                    `Erreur inscription (${response.status})`
+                );
+            }
+
+        } catch (error) {
+            console.error("ERROR:", error);
+            setMessage("Erreur réseau ou serveur");
         }
     };
     return (
@@ -139,10 +220,12 @@ function RegisterGarage() {
             {message && <div className="alert alert-info">{message}</div>}
 
             <form onSubmit={handleSubmit}>
+                <input className="form-control mb-3" placeholder="SIRET" value={form.siret} onChange={(e) => checkSiretAPI(e.target.value)} />
+                {loadingSiret && <p>Chargement...</p>}
+
                 <input className="form-control mb-3" placeholder="Nom du garage" name="nom_garage" onChange={handleChange} value={form.nom_garage} />
                 <input className="form-control mb-3" placeholder="Téléphone" name="telephone" onChange={handleChange} value={form.telephone} />
                 <input className="form-control mb-3" placeholder="Email" name="email" onChange={handleChange} value={form.email} />
-                <input className="form-control mb-3" placeholder="SIRET" name="siret" onChange={handleChange} value={form.siret} />
                 <input className="form-control mb-3" placeholder="TVA" name="tva" onChange={handleChange} value={form.tva} />
                 <input className="form-control mb-3" placeholder="Mot de passe" type="password" name="mdp" onChange={handleChange} value={form.mdp} />
 
@@ -188,7 +271,7 @@ function RegisterGarage() {
                 {/* HIDDEN CODE INSEE */}
                 <input type="hidden" name="code_insee" value={form.code_insee} />
 
-                <button type="submit" className="btn btn-primary mt-4" >
+                <button className="btn btn-primary mt-4" disabled={!siretValid}>
                     Inscription
                 </button>
             </form>
