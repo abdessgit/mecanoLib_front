@@ -105,7 +105,7 @@ function RegisterGarage() {
                 return;
             }
 
-            // AUTO FILL
+
             setForm((prev) => ({
                 ...prev,
                 nom_garage: result.nom || "",
@@ -117,11 +117,7 @@ function RegisterGarage() {
 
             }));
 
-
             setSiretValid(true);
-
-
-
         } catch (err) {
             setMessage("Erreur API");
             setSiretValid(false);
@@ -138,9 +134,6 @@ function RegisterGarage() {
             setMessage("SIRET invalide");
             return;
         }
-
-
-
         try {
             const payload = {
                 nom_garage: form.nom_garage,
@@ -179,7 +172,7 @@ function RegisterGarage() {
             }
 
             if (response.ok) {
-                setMessage(data?.message || "Garage créé avec succès");
+                setMessage(data?.message);
 
                 setForm({
                     nom_garage: "",
@@ -197,9 +190,8 @@ function RegisterGarage() {
                     id_ville: null
                 });
 
-                // 🔥 reset validation SIRET
+
                 setSiretValid(false);
-                setMessage("");
 
             } else {
                 setMessage(

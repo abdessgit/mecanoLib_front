@@ -38,20 +38,22 @@ export const AuthProvider = ({ children }) => {
             const data = await res.json();
 
             if (!res.ok) {
-                return { success: false, message: data.erreur || "Erreur serveur" };
-            }
+                // 🔥 CAS 2FA requis
+                if (data.message === "Veuillez fournir le code 2FA") {
+                    return { success: false, need2FA: true };
+                }
 
+                return { success: false, message: data.message };
+            }
 
             localStorage.setItem("token", data.token);
             setToken(data.token);
-
 
             await fetchUser(data.token);
 
             return { success: true };
 
         } catch (err) {
-            console.error(err);
             return { success: false, message: "Erreur serveur" };
         }
     };
