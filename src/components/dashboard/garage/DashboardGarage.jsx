@@ -8,7 +8,8 @@ export default function GarageRdv({ idGarage }) {
 
     const [is2FARequired, setIs2FARequired] = useState(false);
     const [code2FA, setCode2FA] = useState("");
-    const [erreur, setErreur] = useState("");
+    const [messageActivation, setMessageActivation] = useState("");
+    const [messageValidation, setMessageValidation] = useState("");
 
     // Vérifier si l'utilisateur doit saisir le code 2FA
     useEffect(() => {
@@ -43,14 +44,15 @@ export default function GarageRdv({ idGarage }) {
 
             const data = await res.json();
 
-            if (!res.ok) throw new Error(data.erreur);
+            if (!res.ok) throw new Error(data.message);
 
-            setErreur("2FA activé, configure Google Authenticator");
+            setMessageActivation("Configure Google Authenticator avec le code secret");
             setIs2FARequired(true);
+
             console.log("SECRET:", data.secret);
 
         } catch (err) {
-            setErreur(err.message);
+            setMessageActivation(err.message);
         }
     };
     // Verefication de code 2FA generer 
@@ -72,13 +74,13 @@ export default function GarageRdv({ idGarage }) {
 
             const data = await res.json();
 
-            if (!res.ok) throw new Error(data.erreur);
+            if (!res.ok) throw new Error(data.message);
 
+            setMessageValidation("2FA validé avec succès ✅");
             setIs2FARequired(false);
-            setErreur("2FA activé avec succès ");
 
         } catch (err) {
-            setErreur(err.message);
+            setMessageValidation(err.message);
         }
     };
     // Désactiver l'auth 2FA 
@@ -92,13 +94,13 @@ export default function GarageRdv({ idGarage }) {
 
             const data = await res.json();
 
-            if (!res.ok) throw new Error(data.erreur);
+            if (!res.ok) throw new Error(data.message);
 
-            setErreur("2FA désactivé ");
+            setMessageValidation("2FA désactivé ");
             setIs2FARequired(false);
 
         } catch (err) {
-            setErreur(err.message);
+            setMessageValidation(err.message);
         }
     };
 
@@ -107,29 +109,47 @@ export default function GarageRdv({ idGarage }) {
         navigate("/login");
     };
     if (!user) return <p>Chargement...</p>;
+    return (<div>
 
-    return (
-        <div>
-            <h1>Bienvenue {user.email}</h1>
-            <button onClick={handleLogout}>Se déconnecter</button>
-            {is2FARequired && (
-                <form onSubmit={handle2FASubmit} style={{ marginTop: "20px" }}>
-                    <input type="text" placeholder="Entrez le code 2FA" value={code2FA} onChange={(e) => setCode2FA(e.target.value)} required />
-                    <button type="submit">Valider 2FA</button>
-                    {erreur && <p style={{ color: "red" }}>{erreur}</p>}
-                </form>
-            )}
+        <h1>Bienvenue {user.email}</h1>
 
-            {!is2FARequired && <p>Vous êtes connecté </p>}
-            <h2>Sécurité</h2>
+        <button onClick={handleLogout}>Se déconnecter</button>
 
-            <button onClick={activer2FA}>
-                Activer 2FA
-            </button>
+        {!is2FARequired && <p>Vous êtes connecté</p>}
 
-            <button onClick={desactiver2FA} style={{ marginLeft: "10px" }}>
-                Désactiver 2FA
-            </button>
-        </div>
-    );
+        <h2>Sécurité</h2>
+
+        <button onClick={activer2FA}>
+            Activer 2FA
+        </button>
+        <button onClick={desactiver2FA} style={{ marginLeft: "10px" }}>
+            Désactiver 2FA
+        </button>
+
+        {/* Message après clic sur Activer */}
+        {messageActivation && (
+            <p style={{ color: "blue" }}>{messageActivation}</p>
+        )}
+
+        {/* Formulaire 2FA (une seule fois !) */}
+        {is2FARequired && (
+            <form onSubmit={handle2FASubmit} style={{ marginTop: "20px" }}>
+                <input
+                    type="text"
+                    placeholder="Entrez le code 2FA"
+                    value={code2FA}
+                    onChange={(e) => setCode2FA(e.target.value)}
+                    required
+                />
+                <button type="submit">Valider 2FA</button>
+
+            </form>
+        )}
+
+        {/* Message après validation */}
+        {messageValidation && (
+            <p style={{ color: "green" }}>{messageValidation}</p>
+        )}
+    </div>
+    )
 }
