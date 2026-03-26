@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { registerClient } from "../../services/api"
+import { registerClient } from "../../services/api.js"
 
 function InscriptionClient() {
     const [form, setForm] = useState({
@@ -43,8 +43,7 @@ function InscriptionClient() {
                 tel: form.telephone,
                 consentement: form.consentement,
             })
-
-            setSuccess("Compte client cree avec succes.")
+            setSuccess("Compte client créé avec succès. Vous pouvez maintenant vous connecter.")
             setForm({
                 prenom: "",
                 nom: "",

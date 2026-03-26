@@ -1,3 +1,38 @@
+// --- VALIDATION GARAGE ---
+/**
+ * Valide ou invalide un garage par son ID
+ * @param {string} token - JWT d'authentification
+ * @param {number|string} garageId - ID du garage à valider
+ * @param {boolean} isValide - true pour valider, false pour invalider
+ * @returns {Promise<any>} Résultat de la requête
+ */
+export async function validateGarage(token, garageId, isValide = true) {
+    return apiFetch(`/api/v1/garages/${garageId}`, {
+        method: "PATCH",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ isValide }),
+    });
+}
+// --- GARAGES ---
+/**
+ * Supprime un garage par son ID
+ * @param {string} token - JWT d'authentification
+ * @param {number|string} garageId - ID du garage à supprimer
+ * @returns {Promise<any>} Résultat de la requête
+ */
+export async function deleteGarage(token, garageId) {
+    return apiFetch(`/api/v1/garages/${garageId}`, {
+        method: "DELETE",
+        headers: buildAuthHeaders(token),
+    });
+}
+// --- UTILISATEURS (ADMIN) ---
+export async function deleteUser(token, userId) {
+    return apiFetch(`/api/v1/users/${userId}`, {
+        method: "DELETE",
+        headers: buildAuthHeaders(token),
+    });
+}
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
 const AUTH_TOKEN_KEY = "auth_token"
 const AUTH_ROLE_KEY = "auth_role"
@@ -83,20 +118,25 @@ export function isJwtExpired(token) {
     }
 }
 
+
 export function getDefaultDashboardPath(role) {
-    return role === "garage" ? "/dashboardGarage" : "/dashboardClient"
+    if (role === "superadmin") return "/dashboardSuperAdmin";
+    if (role === "garage") return "/dashboardGarage";
+    return "/dashboardClient";
 }
+
 
 function mapRolesToAppRole(roles) {
     if (!Array.isArray(roles)) {
-        return "client"
+        return "client";
     }
-
-    if (roles.includes("ROLE_ADMIN") || roles.includes("ROLE_SUPER_ADMIN")) {
-        return "garage"
+    if (roles.includes("ROLE_SUPER_ADMIN")) {
+        return "superadmin";
     }
-
-    return "client"
+    if (roles.includes("ROLE_ADMIN")) {
+        return "garage";
+    }
+    return "client";
 }
 
 export async function fetchConnectedUser(token) {
@@ -291,18 +331,25 @@ export async function getClientDashboard(token) {
         headers: buildAuthHeaders(token),
     }
 
-    const [profileResult, appointmentsResult, statsResult] = await Promise.allSettled([
-        tryFirst(["/api/v1/users/connecter", "/api/v1/user/me", "/api/v1/user/profile"], () => authOptions),
-        tryFirst(["/api/v1/user/appointments", "/api/v1/appointments"], () => authOptions),
-        tryFirst(["/api/v1/user/dashboard/stats", "/api/v1/user/stats"], () => authOptions),
-    ])
+    // Récupère le profil utilisateur connecté
+    const profileResult = await tryFirst(["/api/v1/users/connecter"], () => authOptions)
 
-    const profile = profileResult.status === "fulfilled" ? profileResult.value : null
-    const appointments = normalizeAppointments(appointmentsResult.status === "fulfilled" ? appointmentsResult.value : null)
-    const stats = normalizeStats(statsResult.status === "fulfilled" ? statsResult.value : null, appointments)
+    // Récupère les rendez-vous du client (à adapter si besoin)
+    // Ici, il faut probablement l'id du client, à récupérer dans le profil
+    const clientId = profileResult?.id || profileResult?.data?.id || profileResult?.clientId || profileResult?.data?.clientId
+    let appointmentsResult = []
+    if (clientId) {
+        appointmentsResult = await apiFetch(`/api/v1/client/vehicules/${clientId}`, authOptions)
+    }
 
-    const firstName = profile?.prenom || profile?.first_name || profile?.data?.prenom || ""
-    const lastName = profile?.nom || profile?.last_name || profile?.data?.nom || ""
+    // Pas de route stats dédiée, on laisse vide ou à adapter selon besoin
+    const statsResult = {}
+
+    const appointments = normalizeAppointments(appointmentsResult)
+    const stats = normalizeStats(statsResult, appointments)
+
+    const firstName = profileResult?.prenom || profileResult?.first_name || profileResult?.data?.prenom || ""
+    const lastName = profileResult?.nom || profileResult?.last_name || profileResult?.data?.nom || ""
     const fullName = `${firstName} ${lastName}`.trim() || "Client"
 
     return {
@@ -310,6 +357,176 @@ export async function getClientDashboard(token) {
         stats,
         appointments,
     }
+}
+
+// --- RENDEZ-VOUS ---
+export async function getClientRendezVous(token, clientId) {
+    return apiFetch(`/api/v1/client/rdvs?clientId=${clientId}`, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function getGarageRendezVous(token, garageId) {
+    return apiFetch(`/api/v1/garage/${garageId}/rdvs`, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function createRendezVous(token, data) {
+    return apiFetch("/api/v1/creer_rdv", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function updateRendezVous(token, data) {
+    return apiFetch("/api/v1/modifier_rdv", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function deleteRendezVous(token, id) {
+    return apiFetch(`/api/v1/rdv/${id}`, {
+        method: "DELETE",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+// --- PRESTATIONS ---
+export async function getPrestations(token) {
+    return apiFetch("/api/v1/get_prestations", {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function getPrestationsByGarage(token, garageId) {
+    return apiFetch(`/api/v1/get_prestations_by_garage/${garageId}`, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function addPrestationsGarage(token, garageId, prestations) {
+    return apiFetch(`/api/v1/garage/${garageId}/add_prestations`, {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ prestations }),
+    })
+}
+
+export async function deletePrestationGarage(token, garageId, prestationId) {
+    return apiFetch(`/api/v1/garage/${garageId}/delete_prestation/${prestationId}`, {
+        method: "DELETE",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+// --- AVIS ---
+export async function getAvis(token, { garageId, clientId } = {}) {
+    let url = "/api/v1/avis"
+    const params = []
+    if (garageId) params.push(`garageId=${garageId}`)
+    if (clientId) params.push(`clientId=${clientId}`)
+    if (params.length) url += `?${params.join("&")}`
+    return apiFetch(url, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function createAvis(token, data) {
+    return apiFetch("/api/v1/avis", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function updateAvis(token, id, data) {
+    return apiFetch(`/api/v1/avis/${id}`, {
+        method: "PUT",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function deleteAvis(token, id) {
+    return apiFetch(`/api/v1/avis/${id}`, {
+        method: "DELETE",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+// --- HISTORIQUES ---
+export async function getHistoriques(token, rdvId) {
+    let url = "/api/v1/historiques"
+    if (rdvId) url += `?rdvId=${rdvId}`
+    return apiFetch(url, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function createHistorique(token, data) {
+    return apiFetch("/api/v1/historiques", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+// --- VEHICULES ---
+export async function getVehiculesClient(token, clientId) {
+    return apiFetch(`/api/v1/client/vehicules/${clientId}`, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function addVehicule(token, data) {
+    return apiFetch("/api/v1/client/add_vehicule", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function updateVehicule(token, id, data) {
+    return apiFetch(`/api/v1/client/update_vehicule/${id}`, {
+        method: "PATCH",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function deleteVehicule(token, id) {
+    return apiFetch(`/api/v1/client/delete_vehicule/${id}`, {
+        method: "DELETE",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+// --- NOTIFICATIONS ---
+export async function sendNotification(token, data) {
+    return apiFetch("/api/v1/status_notif/send", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function verifyOtpNotif(token, data) {
+    return apiFetch("/api/v1/status_notif/verify-otp", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
 }
 
 export { API_BASE_URL }

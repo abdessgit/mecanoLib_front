@@ -9,9 +9,20 @@ import Inscription from './components/inscription/Inscription.jsx'
 import ConnexionGarage from './components/connexion/ConnexionGarage.jsx'
 import DashboardClient from './components/Dashboard/DashboardClient.jsx'
 import DashboardGarage from './components/Dashboard/DashboardGarage.jsx'
+import DashboardSuperAdmin from './components/Dashboard/DashboardSuperAdmin.jsx'
 import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
 import PlaceholderPage from './components/common/PlaceholderPage.jsx'
+import RendezVousNew from './components/client/RendezVousNew.jsx'
+import RechercheGarages from './components/client/RechercheGarages.jsx'
+import TousRendezVous from './components/client/TousRendezVous.jsx'
+import MesDevis from './components/client/MesDevis.jsx'
+import MesFactures from './components/client/MesFactures.jsx'
+import MonProfil from './components/client/MonProfil.jsx'
+import MotDePasseOublie from './components/common/MotDePasseOublie.jsx'
+import MentionsLegales from './components/common/MentionsLegales.jsx'
+import CGU from './components/common/CGU.jsx'
+import Confidentialite from './components/common/Confidentialite.jsx'
 import { GuestRoute, ProtectedRoute } from './components/auth/RouteGuards.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -29,16 +40,17 @@ createRoot(document.getElementById('root')).render(
                         <Route path="/connexionGarage" element={<GuestRoute><ConnexionGarage /></GuestRoute>} />
                         <Route path="/dashboardClient" element={<ProtectedRoute allowedRoles={["client"]}><DashboardClient /></ProtectedRoute>} />
                         <Route path="/dashboardGarage" element={<ProtectedRoute allowedRoles={["garage"]}><DashboardGarage /></ProtectedRoute>} />
-                        <Route path="/rendez-vous/new" element={<ProtectedRoute allowedRoles={["client"]}><PlaceholderPage title="Prise de rendez-vous" description="Ce module sera bientot disponible. Vous pouvez deja consulter votre dashboard et vos rendez-vous existants." /></ProtectedRoute>} />
-                        <Route path="/garages" element={<ProtectedRoute><PlaceholderPage title="Recherche de garages" description="La recherche de garages est en preparation. Revenez bientot pour filtrer les garages par ville, services et avis." /></ProtectedRoute>} />
-                        <Route path="/client/rendez-vous" element={<ProtectedRoute allowedRoles={["client"]}><PlaceholderPage title="Tous mes rendez-vous" description="La vue complete des rendez-vous arrive prochainement." /></ProtectedRoute>} />
-                        <Route path="/client/devis" element={<ProtectedRoute allowedRoles={["client"]}><PlaceholderPage title="Mes devis" description="Le suivi des devis est en preparation." /></ProtectedRoute>} />
-                        <Route path="/client/factures" element={<ProtectedRoute allowedRoles={["client"]}><PlaceholderPage title="Mes factures" description="La consultation des factures sera disponible bientot." /></ProtectedRoute>} />
-                        <Route path="/client/profil" element={<ProtectedRoute allowedRoles={["client"]}><PlaceholderPage title="Mon profil" description="La mise a jour du profil est en cours de developpement." /></ProtectedRoute>} />
-                        <Route path="/mot-de-passe-oublie" element={<GuestRoute><PlaceholderPage title="Mot de passe oublie" description="Le parcours de reinitialisation sera disponible bientot." /></GuestRoute>} />
-                        <Route path="/mentions-legales" element={<PlaceholderPage title="Mentions legales" description="Les mentions legales seront publiees ici." />} />
-                        <Route path="/cgu" element={<PlaceholderPage title="Conditions generales d'utilisation" description="Les CGU seront disponibles sur cette page." />} />
-                        <Route path="/confidentialite" element={<PlaceholderPage title="Politique de confidentialite" description="La politique de confidentialite sera publiee ici." />} />
+                        <Route path="/dashboardSuperAdmin" element={<ProtectedRoute allowedRoles={["superadmin"]}><DashboardSuperAdmin /></ProtectedRoute>} />
+                        <Route path="/rendez-vous/new" element={<ProtectedRoute allowedRoles={["client"]}><RendezVousNew /></ProtectedRoute>} />
+                        <Route path="/garages" element={<ProtectedRoute><RechercheGarages /></ProtectedRoute>} />
+                        <Route path="/client/rendez-vous" element={<ProtectedRoute allowedRoles={["client"]}><TousRendezVous /></ProtectedRoute>} />
+                        <Route path="/client/devis" element={<ProtectedRoute allowedRoles={["client"]}><MesDevis /></ProtectedRoute>} />
+                        <Route path="/client/factures" element={<ProtectedRoute allowedRoles={["client"]}><MesFactures /></ProtectedRoute>} />
+                        <Route path="/client/profil" element={<ProtectedRoute allowedRoles={["client"]}><MonProfil /></ProtectedRoute>} />
+                        <Route path="/mot-de-passe-oublie" element={<GuestRoute><MotDePasseOublie /></GuestRoute>} />
+                        <Route path="/mentions-legales" element={<MentionsLegales />} />
+                        <Route path="/cgu" element={<CGU />} />
+                        <Route path="/confidentialite" element={<Confidentialite />} />
                     </Routes>
                 </div>
                 <Footer />
