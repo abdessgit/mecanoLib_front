@@ -1,0 +1,160 @@
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.logo-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  box-shadow: 
+    0 4px 15px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.logo-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #3b82f6 0%, #22c55e 100%);
+  filter: blur(12px);
+  opacity: 0.4;
+  z-index: -1;
+}
+
+.logo-svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.logo-gear-outer {
+  transform-origin: center;
+}
+
+.logo-gear-inner {
+  transform-origin: center;
+}
+
+.logo-wrench {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.logo-text {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  display: flex;
+}
+
+.logo-letter {
+  transition: color 0.2s ease;
+}
+
+.logo-letter-accent {
+  background: linear-gradient(135deg, #3b82f6 0%, #22c55e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo:hover .logo-letter {
+  color: #2563eb;
+}
+
+.logo:hover .logo-letter-accent {
+  background: linear-gradient(135deg, #2563eb 0%, #16a34a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Size variants */
+.logo-small {
+  gap: 0.5rem;
+}
+
+.logo-small .logo-icon-container {
+  border-radius: 10px;
+}
+
+.logo-large .logo-icon-container {
+  border-radius: 20px;
+}
+
+.logo-xl .logo-icon-container {
+  border-radius: 24px;
+}
+
+.logo-xl .logo-glow {
+  border-radius: 28px;
+  filter: blur(16px);
+}
+
+/* Animation for page load */
+@keyframes logoEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.logo-animated-entrance {
+  animation: logoEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Floating animation */
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.logo-floating {
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+/* Shine effect on hover */
+.logo-icon-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.logo:hover .logo-icon-container::after {
+  opacity: 1;
+  animation: shine 0.8s ease;
+}
+
+@keyframes shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { registerClient } from "../../services/api.js"
+import { registerClient } from "../../services/api"
 
 function InscriptionClient() {
     const [form, setForm] = useState({
