@@ -1,0 +1,25 @@
+.auth-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 50px; 
+  padding: 50px;
+  flex-wrap: wrap; 
+}
+
+.auth-left,
+.auth-right {
+  flex: 1;
+  min-width: 300px; 
+}
+.auth-page-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem; 
+    padding: 2rem;
+}
+
+.auth-left, .auth-right {
+    flex: 1;
+}

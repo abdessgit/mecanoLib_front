@@ -1,16 +1,24 @@
-import './App.css';
-import { useNavigate } from "react-router-dom";
-
+import { Routes, Route } from "react-router-dom";
+import HomePage from "./components/Pages/HomePage";
+import AuthPage from "./components/AuthPage/AuthPage";
+import DashboardGarage from "./components/dashboard/garage/DashboardGarage";
+import Header from "./components/Header/Header";
+import ForgetPassword from "./components/AuthPage/ForgetPassword";
+import DashboardSuperAdmin from "./components/dashboard/superAdmin/DashboardSuperAdmin";
+import DashboardClient from "./components/dashboard/client/DachboardClient";
 function App() {
-    const navigate = useNavigate();
-
     return (
-        <div>
-            <h1>Bienvenue sur MecanoLib</h1>
-            <p>Page d'accueil</p>
-            <button onClick={() => navigate("/login")}>Se connecter</button>
-            <button onClick={() => navigate("/inscriptionGarage")}>Inscription Garage</button>
-        </div>
+        <>
+            <Header />
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/forget-password" element={<ForgetPassword />} />
+                <Route path="/dashboardGarage" element={<DashboardGarage />} />
+                <Route path="/dashboardClient" element={<DashboardClient />} />
+                <Route path="/DashboardSuperAdmin" element={<DashboardSuperAdmin />} />
+            </Routes>
+        </>
     );
 }
 

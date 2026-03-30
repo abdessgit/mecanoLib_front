@@ -7,15 +7,17 @@ export default function GarageRdv({ idGarage }) {
     const { user, logout, token } = useContext(AuthConnexion);
 
     const [is2FARequired, setIs2FARequired] = useState(false);
+    const [is2FAActivated, setIs2FAActivated] = useState(false);
+
     const [code2FA, setCode2FA] = useState("");
     const [messageActivation, setMessageActivation] = useState("");
     const [messageValidation, setMessageValidation] = useState("");
 
     // Vérifier si l'utilisateur doit saisir le code 2FA
     useEffect(() => {
-        const check2FA = async () => {
-            if (!token || !user) return;
+        if (!token) return;
 
+        const check2FA = async () => {
             try {
                 const res = await fetch("http://127.0.0.1:8000/api/v1/users/connecter", {
                     headers: {
@@ -25,14 +27,20 @@ export default function GarageRdv({ idGarage }) {
 
                 const data = await res.json();
 
-                if (data.is2fa) setIs2FARequired(true);
+
+                if (data.is2fa === true) {
+                    setIs2FAActivated(true);
+                } else {
+                    setIs2FAActivated(false);
+                }
+
             } catch (err) {
                 console.error(err);
             }
         };
 
         check2FA();
-    }, [token, user]);
+    }, [token]);
     // activation du code 2FA 
     const activer2FA = async () => {
         try {
@@ -46,10 +54,9 @@ export default function GarageRdv({ idGarage }) {
 
             if (!res.ok) throw new Error(data.message);
 
-            setMessageActivation("Configure Google Authenticator avec le code secret");
+            setMessageActivation(" Vérifie ton email pour scanner le QR code");
             setIs2FARequired(true);
-
-            console.log("SECRET:", data.secret);
+            setIs2FAActivated(true);
 
         } catch (err) {
             setMessageActivation(err.message);
@@ -72,11 +79,18 @@ export default function GarageRdv({ idGarage }) {
                 })
             });
 
-            const data = await res.json();
+            const text = await res.text();
+            let data;
+
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error("Réponse serveur invalide (pas du JSON)");
+            }
 
             if (!res.ok) throw new Error(data.message);
 
-            setMessageValidation("2FA validé avec succès ✅");
+            setMessageValidation("2FA validé avec succès ");
             setIs2FARequired(false);
 
         } catch (err) {
@@ -98,6 +112,7 @@ export default function GarageRdv({ idGarage }) {
 
             setMessageValidation("2FA désactivé ");
             setIs2FARequired(false);
+            setIs2FAActivated(false);
 
         } catch (err) {
             setMessageValidation(err.message);
@@ -106,12 +121,12 @@ export default function GarageRdv({ idGarage }) {
 
     const handleLogout = () => {
         logout();
-        navigate("/login");
+        navigate("/auth");
     };
     if (!user) return <p>Chargement...</p>;
     return (<div>
 
-        <h1>Bienvenue {user.email}</h1>
+        <h1>Bienvenue {user.nom}</h1>
 
         <button onClick={handleLogout}>Se déconnecter</button>
 
@@ -119,19 +134,14 @@ export default function GarageRdv({ idGarage }) {
 
         <h2>Sécurité</h2>
 
-        <button onClick={activer2FA}>
-            Activer 2FA
-        </button>
-        <button onClick={desactiver2FA} style={{ marginLeft: "10px" }}>
-            Désactiver 2FA
-        </button>
+        <button onClick={activer2FA} disabled={is2FAActivated}>
+            {is2FAActivated ? "2FA déjà activée " : "Activer 2FA"}</button>
+        <button onClick={desactiver2FA} disabled={!is2FAActivated} style={{ marginLeft: "10px" }}>
+            Désactiver 2FA </button>
 
-        {/* Message après clic sur Activer */}
         {messageActivation && (
             <p style={{ color: "blue" }}>{messageActivation}</p>
         )}
-
-        {/* Formulaire 2FA (une seule fois !) */}
         {is2FARequired && (
             <form onSubmit={handle2FASubmit} style={{ marginTop: "20px" }}>
                 <input

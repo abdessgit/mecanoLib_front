@@ -3,9 +3,12 @@ import React, { createContext, useState, useEffect } from "react";
 export const AuthConnexion = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(
+        JSON.parse(localStorage.getItem("user")) || null
+    );
     const [token, setToken] = useState(localStorage.getItem("token") || null);
 
+    // Récupération de l'utilisateur si token existant
     useEffect(() => {
         if (token) fetchUser(token);
     }, [token]);
@@ -21,11 +24,11 @@ export const AuthProvider = ({ children }) => {
             if (!res.ok) throw new Error("Token invalide ou expiré");
             const data = await res.json();
             setUser(data);
+            localStorage.setItem("user", JSON.stringify(data));
         } catch (err) {
             logout();
         }
     };
-
 
     const login = async ({ emailUtilisateur, mdpUtilisateur, authCode }) => {
         try {
@@ -37,28 +40,33 @@ export const AuthProvider = ({ children }) => {
 
             const data = await res.json();
 
-            if (!res.ok) {
-                // 🔥 CAS 2FA requis
-                if (data.message === "Veuillez fournir le code 2FA") {
-                    return { success: false, need2FA: true };
-                }
-
-                return { success: false, message: data.message };
+            // Backend demande code 2FA
+            if (res.status === 403 && data.message?.includes("2FA")) {
+                return { need2FA: true, message: data.message };
             }
 
+            // Mauvais login
+            if (!res.ok) {
+                return { success: false, message: data.message || "Email ou mot de passe invalide" };
+            }
+
+            // Login OK → token reçu
             localStorage.setItem("token", data.token);
             setToken(data.token);
 
+            // Récupérer user complet
             await fetchUser(data.token);
 
-            return { success: true };
+            return { success: true, user: JSON.parse(localStorage.getItem("user")) };
 
         } catch (err) {
-            return { success: false, message: "Erreur serveur" };
+            return { success: false, message: "Serveur inaccessible" };
         }
     };
+
     const logout = () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
         setToken(null);
         setUser(null);
     };

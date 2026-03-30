@@ -1,0 +1,62 @@
+/* HEADER */
+.header{
+    position:sticky;
+    top:0;
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.05);
+    border-bottom:1px solid rgba(255,255,255,0.1);
+    z-index:1000;
+}
+
+/* CONTENEUR */
+.header-container{
+    max-width:1200px;
+    margin:auto;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px 20px;
+}
+
+
+.logo{
+    font-size:22px;
+    font-weight:bold;
+    color:#ffd54f;
+    cursor:pointer;
+}
+
+/* BOUTONS */
+.nav-buttons{
+    display:flex;
+    gap:12px;
+}
+
+.btn-login{
+    padding:8px 18px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.3);
+    background:transparent;
+    color:white;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.btn-login:hover{
+    background:rgba(255,255,255,0.1);
+}
+
+.btn-register{
+    padding:8px 18px;
+    border-radius:8px;
+    border:none;
+    background:#ffd54f;
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.btn-register:hover{
+    background:#ffe082;
+}
