@@ -1,0 +1,90 @@
+
+.login-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;    
+  
+    background-color: rgba(255,255,255,0.06);
+    color: #f1c40f;  
+    border-radius: 18px;        
+    padding: 2rem;
+    font-family: 'Arial', sans-serif;
+}
+.auth-left{
+     align-self: center;  
+}
+.login-container h2 {
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    text-align: center;
+}
+
+
+.login-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 300px;
+}
+
+
+.login-container input {
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    border: 2px solid #f1c40f; 
+    border-radius: 8px;
+    background-color: #28313e; 
+    color: #f1c40f;
+    outline: none;
+    transition: 0.3s;
+}
+
+.login-container input::placeholder {
+    color: #f1c40f99;
+}
+
+.login-container input:focus {
+    border-color: #ffd700; 
+    box-shadow: 0 0 5px #ffd700;
+}
+
+
+.login-container button {
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    background-color: #f1c40f;
+    color: #1e1e1e;            
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.login-container button:hover {
+    background-color: #ffd700; 
+    transform: scale(1.05);
+}
+
+
+.login-container p {
+    color: #ff4c4c;
+    text-align: center;
+    font-size: 0.9rem;
+}
+/*lien mot de passe oublier */
+.forgot-password {
+    text-align: right;
+    margin-bottom: 15px;
+}
+
+.forgot-password a {
+    font-size: 14px;
+    color: #555;
+    text-decoration: none;
+}
+
+.forgot-password a:hover {
+    text-decoration: underline;
+}

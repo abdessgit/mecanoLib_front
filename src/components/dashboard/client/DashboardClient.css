@@ -1,0 +1,217 @@
+.client-dashboard {
+  min-height: calc(100vh - 88px);
+  padding: 8rem 1rem 4rem;
+  background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+}
+
+.client-dashboard-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.client-dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.client-dashboard-kicker {
+  display: inline-flex;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.85rem;
+}
+
+.client-dashboard-header h1 {
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  color: #0f172a;
+  margin-bottom: 0.45rem;
+}
+
+.client-dashboard-header p {
+  color: #64748b;
+  max-width: 720px;
+}
+
+.client-dashboard-logout {
+  flex-shrink: 0;
+}
+
+.client-dashboard-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e40af;
+  border-radius: 18px;
+  margin-bottom: 1.5rem;
+}
+
+.client-dashboard-alert strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.client-dashboard-alert span {
+  color: #1e3a8a;
+  font-size: 0.92rem;
+}
+
+.client-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.client-dashboard-card {
+  border-radius: 24px !important;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08) !important;
+}
+
+.client-dashboard-card-content {
+  padding: 1.5rem !important;
+}
+
+.client-dashboard-card-content h2 {
+  color: #0f172a;
+  margin-bottom: 1rem;
+}
+
+.client-dashboard-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.client-dashboard-list div {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #334155;
+}
+
+.client-dashboard-section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.client-dashboard-section-header p {
+  color: #64748b;
+}
+
+.client-dashboard-book-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.client-dashboard-next-appointment {
+  padding: 1.15rem 1.2rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%);
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.client-dashboard-next-label {
+  display: block;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+  margin-bottom: 0.45rem;
+}
+
+.client-dashboard-next-appointment strong {
+  display: block;
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
+}
+
+.client-dashboard-next-appointment p,
+.client-dashboard-empty p {
+  color: inherit;
+  margin: 0;
+}
+
+.client-dashboard-empty {
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.client-dashboard-appointment-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.client-dashboard-appointment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+}
+
+.client-dashboard-appointment-item strong {
+  display: block;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.client-dashboard-appointment-item span {
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.client-dashboard-status {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.client-dashboard-status-pending { background: #ffedd5; color: #c2410c; }
+.client-dashboard-status-confirmed { background: #dcfce7; color: #15803d; }
+.client-dashboard-status-completed { background: #dbeafe; color: #1d4ed8; }
+.client-dashboard-status-cancelled_client,
+.client-dashboard-status-cancelled_garage,
+.client-dashboard-status-refused,
+.client-dashboard-status-no_show { background: #fee2e2; color: #b91c1c; }
+
+@media (max-width: 768px) {
+  .client-dashboard {
+    padding-top: 7rem;
+  }
+
+  .client-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .client-dashboard-header,
+  .client-dashboard-section-header,
+  .client-dashboard-appointment-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
