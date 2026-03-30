@@ -1,0 +1,10 @@
+export { default as Home } from './Home/Home';
+export { default as Booking } from './Booking/Booking';
+export { default as BookingConfirmation } from './BookingConfirmation/BookingConfirmation';
+export { default as ClientLogin } from './ClientLogin/ClientLogin';
+export { default as ClientRegister } from './ClientRegister/ClientRegister';
+export { default as ClientDashboard } from './ClientDashboard/ClientDashboard';
+export { default as AdminLogin } from './AdminLogin/AdminLogin';
+export { default as GarageLogin } from './GarageLogin/GarageLogin';
+export { default as GarageRegister } from './GarageRegister/GarageRegister';
+export { default as GarageDashboard } from './GarageDashboard/GarageDashboard';

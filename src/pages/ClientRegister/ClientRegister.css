@@ -1,0 +1,210 @@
+.client-register-page {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 28%),
+    linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%);
+}
+
+.client-register-layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.client-register-branding {
+  color: white;
+  padding: 2rem;
+}
+
+.client-register-kicker {
+  display: inline-flex;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1rem;
+}
+
+.client-register-branding h1 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  margin-bottom: 1rem;
+}
+
+.client-register-branding p {
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.75;
+}
+
+.client-register-points {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+
+.client-register-points div {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.client-register-card {
+  border-radius: 28px !important;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.22) !important;
+}
+
+.client-register-card-content {
+  padding: 2rem !important;
+}
+
+.client-register-header {
+  margin-bottom: 1.5rem;
+}
+
+.client-register-header h2 {
+  color: #0f172a;
+  font-size: 1.8rem;
+  margin-bottom: 0.4rem;
+}
+
+.client-register-header p {
+  color: #64748b;
+}
+
+.client-register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.client-register-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.client-register-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.client-register-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.client-register-section-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 0.2rem;
+}
+
+.client-register-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.client-register-actions,
+.client-register-success-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.client-register-secondary-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.client-register-form .client-register-secondary-link {
+  color: #475569;
+}
+
+.client-register-submit {
+  min-width: 220px;
+  justify-content: center;
+}
+
+.client-register-success {
+  max-width: 760px;
+  margin: 4rem auto;
+  background: white;
+  border-radius: 30px;
+  padding: 3rem;
+  text-align: center;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.22);
+}
+
+.client-register-success-icon {
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 1.25rem;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.client-register-success h1 {
+  color: #0f172a;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  margin-bottom: 0.7rem;
+}
+
+.client-register-success p {
+  color: #64748b;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .client-register-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .client-register-grid-2,
+  .client-register-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .client-register-card-content,
+  .client-register-success,
+  .client-register-branding {
+    padding: 1.4rem !important;
+  }
+
+  .client-register-actions,
+  .client-register-success-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .client-register-submit,
+  .client-register-secondary-link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}

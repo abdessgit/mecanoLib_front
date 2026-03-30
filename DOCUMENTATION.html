@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MecanoLib — Documentation</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-light: #eff6ff;
+      --dark: #0f172a;
+      --gray: #64748b;
+      --gray-light: #f1f5f9;
+      --border: #e2e8f0;
+      --green: #16a34a;
+      --orange: #ea580c;
+      --red: #dc2626;
+      --sidebar-w: 280px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    aside {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--dark);
+      color: #cbd5e1;
+      position: fixed;
+      top: 0; left: 0;
+      overflow-y: auto;
+      padding: 2rem 0 3rem;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0 1.5rem 2rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 1.5rem;
+    }
+
+    .sidebar-logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .sidebar-logo-text { font-size: 1.1rem; font-weight: 700; color: white; }
+    .sidebar-logo-sub  { font-size: 0.72rem; color: #64748b; margin-top: 1px; }
+
+    .sidebar-section-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #475569;
+      padding: 0 1.5rem 0.5rem;
+      margin-top: 1.25rem;
+    }
+
+    aside a {
+      display: block;
+      padding: 0.5rem 1.5rem;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.875rem;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+
+    aside a:hover {
+      color: white;
+      background: rgba(255,255,255,0.05);
+      border-left-color: #3b82f6;
+    }
+
+    /* ── MAIN ── */
+    main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 3rem 4rem 6rem;
+      max-width: calc(100% - var(--sidebar-w));
+    }
+
+    /* ── HEADER ── */
+    .doc-header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      border-radius: 20px;
+      padding: 3rem;
+      color: white;
+      margin-bottom: 3rem;
+    }
+
+    .doc-header h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.03em; }
+    .doc-header p  { color: #94a3b8; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.5rem; }
+    .badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: rgba(255,255,255,0.12);
+      color: #e2e8f0;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      scroll-margin-top: 2rem;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--blue-light);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .section-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .icon-blue   { background: #eff6ff; }
+    .icon-green  { background: #f0fdf4; }
+    .icon-orange { background: #fff7ed; }
+    .icon-purple { background: #f5f3ff; }
+    .icon-red    { background: #fef2f2; }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--dark);
+      margin: 1.75rem 0 0.75rem;
+    }
+
+    h3:first-child { margin-top: 0; }
+
+    p { color: #475569; line-height: 1.75; margin-bottom: 0.75rem; font-size: 0.925rem; }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; margin: 1rem 0; border-radius: 10px; border: 1px solid var(--border); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+
+    thead tr { background: var(--gray-light); }
+    thead th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 700;
+      color: var(--dark);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tbody tr { border-top: 1px solid var(--border); }
+    tbody tr:hover { background: #fafafa; }
+    tbody td { padding: 0.7rem 1rem; color: #334155; vertical-align: top; }
+
+    /* ── CODE ── */
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.82rem;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 0.15em 0.4em;
+      border-radius: 5px;
+      border: 1px solid #e2e8f0;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 1.5rem;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      overflow-x: auto;
+      line-height: 1.7;
+      margin: 1rem 0;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+    }
+
+    pre code { background: none; border: none; color: inherit; padding: 0; font-size: inherit; }
+
+    /* ── CARDS GRID ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .info-card {
+      background: var(--gray-light);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .info-card-label { font-size: 0.75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; }
+    .info-card-value { font-size: 1.15rem; font-weight: 800; color: var(--dark); margin-top: 0.25rem; }
+    .info-card-sub   { font-size: 0.8rem; color: var(--gray); margin-top: 0.2rem; }
+
+    /* ── ROUTE ITEMS ── */
+    .route-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.15s;
+    }
+
+    .route-item:hover { border-color: #3b82f6; }
+
+    .route-path {
+      font-family: monospace;
+      font-size: 0.875rem;
+      font-weight: 700;
+      background: var(--dark);
+      color: #67e8f9;
+      padding: 0.35rem 0.75rem;
+      border-radius: 7px;
+      white-space: nowrap;
+    }
+
+    .route-info { flex: 1; }
+    .route-page { font-weight: 700; color: var(--dark); font-size: 0.9rem; }
+    .route-desc { font-size: 0.82rem; color: var(--gray); margin-top: 0.2rem; }
+
+    .layout-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+    }
+
+    .layout-main  { background: #eff6ff; color: #1d4ed8; }
+    .layout-clean { background: #f0fdf4; color: #15803d; }
+
+    /* ── WARNINGS ── */
+    .warning {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-left: 4px solid #ea580c;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-size: 0.875rem;
+      color: #9a3412;
+      margin: 1rem 0;
+    }
+
+    /* ── STEP ITEMS ── */
+    .steps-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
+
+    .step-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 1rem 1.25rem;
+      background: var(--gray-light);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .step-number {
+      width: 32px; height: 32px;
+      background: var(--blue);
+      color: white;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+
+    .step-content-label { font-weight: 700; color: var(--dark); font-size: 0.9rem; }
+    .step-content-desc  { font-size: 0.82rem; color: var(--gray); margin-top: 0.2rem; }
+
+    /* ── PROP TAGS ── */
+    .prop-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-left: 0.35rem;
+    }
+
+    .tag-required { background: #fef2f2; color: #dc2626; }
+    .tag-optional { background: #f0fdf4; color: #16a34a; }
+
+    /* ── ATTENTION ITEMS ── */
+    .attention-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
+
+    .attention-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      border: 1px solid;
+    }
+
+    .attention-item.warn  { background: #fff7ed; border-color: #fed7aa; }
+    .attention-item.info  { background: #eff6ff; border-color: #bfdbfe; }
+    .attention-item.error { background: #fef2f2; border-color: #fecaca; }
+
+    .attention-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .attention-item.warn  .attention-num { background: #ea580c; color: white; }
+    .attention-item.info  .attention-num { background: #2563eb; color: white; }
+    .attention-item.error .attention-num { background: #dc2626; color: white; }
+
+    .attention-title { font-weight: 700; font-size: 0.9rem; }
+    .attention-item.warn  .attention-title { color: #9a3412; }
+    .attention-item.info  .attention-title { color: #1e40af; }
+    .attention-item.error .attention-title { color: #991b1b; }
+
+    .attention-desc { font-size: 0.82rem; margin-top: 0.2rem; color: #475569; }
+
+    /* ── COMPONENT HEADER ── */
+    .comp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .comp-file {
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: var(--gray);
+      background: var(--gray-light);
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .divider { height: 1px; background: var(--border); margin: 2rem 0; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      aside { display: none; }
+      main { margin-left: 0; padding: 2rem 1.5rem; max-width: 100%; }
+    }
+
+    /* ── SCROLLBAR ── */
+    aside::-webkit-scrollbar { width: 4px; }
+    aside::-webkit-scrollbar-track { background: transparent; }
+    aside::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside>
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🔧</div>
+    <div>
+      <div class="sidebar-logo-text">MecanoLib</div>
+      <div class="sidebar-logo-sub">Documentation</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section-title">Général</div>
+  <a href="#architecture">Architecture</a>
+  <a href="#routage">Routage</a>
+  <a href="#context">Contexte global</a>
+  <a href="#mockdata">Données mockées</a>
+
+  <div class="sidebar-section-title">Pages</div>
+  <a href="#home">Home</a>
+  <a href="#booking">Booking</a>
+  <a href="#confirmation">BookingConfirmation</a>
+  <a href="#client">ClientLogin</a>
+  <a href="#admin">AdminLogin</a>
+  <a href="#garage-login">GarageLogin</a>
+  <a href="#garage-dashboard">GarageDashboard</a>
+
+  <div class="sidebar-section-title">Composants</div>
+  <a href="#navbar">Navbar</a>
+  <a href="#footer">Footer</a>
+  <a href="#button">Button</a>
+  <a href="#card">Card</a>
+  <a href="#input">Input</a>
+  <a href="#modal">Modal</a>
+  <a href="#logo">Logo</a>
+  <a href="#herocarousel">HeroCarousel</a>
+  <a href="#servicecard">ServiceCard</a>
+  <a href="#statusbadge">StatusBadge</a>
+  <a href="#timeslot">TimeSlot</a>
+
+  <div class="sidebar-section-title">Autre</div>
+  <a href="#attention">Points d'attention</a>
+</aside>
+
+<!-- MAIN -->
+<main>
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <h1>🔧 MecanoLib</h1>
+    <p>Documentation complète — Application de prise de rendez-vous pour garages automobiles</p>
+    <div class="badge-row">
+      <span class="badge">React 19.2</span>
+      <span class="badge">Vite 8.0</span>
+      <span class="badge">React Router 7.13</span>
+      <span class="badge">Framer Motion 12.38</span>
+      <span class="badge">Tailwind CSS 3.4</span>
+      <span class="badge">lucide-react</span>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="section" id="architecture">
+    <h2 class="section-title">
+      <span class="section-icon icon-blue">🏗️</span>
+      1. Architecture générale
+    </h2>
+
+    <pre><code>AppProvider (AppContext)
+  └── BrowserRouter
+        └── AnimatedRoutes (AnimatePresence — transitions de page)
+              ├── MainLayout  →  Navbar + &lt;page&gt; + Footer
+              └── CleanLayout →  &lt;page&gt; seule (sans Navbar/Footer)</code></pre>
+
+    <h3>Stack technique</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Outil</th><th>Version</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>React</code></td><td>19.2</td><td>Interface utilisateur</td></tr>
+          <tr><td><code>Vite</code></td><td>8.0</td><td>Build &amp; Dev server</td></tr>
+          <tr><td><code>React Router</code></td><td>7.13</td><td>Routage client</td></tr>
+          <tr><td><code>Framer Motion</code></td><td>12.38</td><td>Animations</td></tr>
+          <tr><td><code>Tailwind CSS</code></td><td>3.4</td><td>Styles utilitaires</td></tr>
+          <tr><td><code>lucide-react</code></td><td>1.7</td><td>Icônes</td></tr>
+          <tr><td><code>clsx + tailwind-merge</code></td><td>—</td><td>Fusion de classes CSS</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ROUTAGE -->
+  <div class="section" id="routage">
+    <h2 class="section-title">
+      <span class="section-icon icon-green">🗺️</span>
+      2. Routage
+    </h2>
+    <p>Déclaré dans <code>src/App.jsx</code>.</p>
+
+    <div class="route-item">
+      <span class="route-path">/</span>
+      <div class="route-info">
+        <div class="route-page">Home <span class="layout-badge layout-main">MainLayout</span></div>
+        <div class="route-desc">Page d'accueil marketing</div>
+      </div>
+    </div>
+    <div class="route-item">
+      <span class="route-path">/booking</span>
+      <div class="route-info">
+        <div class="route-page">Booking <span class="layout-badge layout-main">MainLayout</span></div>
+        <div class="route-desc">Formulaire de prise de RDV (4 étapes)</div>
+      </div>
+    </div>
+    <div class="route-item">
+      <span class="route-path">/booking/confirmation</span>
+      <div class="route-info">
+        <div class="route-page">BookingConfirmation <span class="layout-badge layout-main">MainLayout</span></div>
+        <div class="route-desc">Confirmation après réservation</div>
+      </div>
+    </div>
+    <div class="route-item">
+      <span class="route-path">/client</span>
+      <div class="route-info">
+        <div class="route-page">ClientLogin <span class="layout-badge layout-main">MainLayout</span></div>
+        <div class="route-desc">Connexion espace client (stub)</div>
+      </div>
+    </div>
+    <div class="route-item">
+      <span class="route-path">/admin</span>
+      <div class="route-info">
+        <div class="route-page">AdminLogin <span class="layout-badge layout-clean">CleanLayout</span></div>
+        <div class="route-desc">Connexion super-administrateur</div>
+      </div>
+    </div>
+    <div class="route-item">
+      <span class="route-path">/garage</span>
+      <div class="route-info">
+        <div class="route-page">GarageLogin <span class="layout-badge layout-clean">CleanLayout</span></div>
+        <div class="route-desc">Connexion garage partenaire</div>
+      </div>
+    </div>
+    <div class="route-item">
+      <span class="route-path">/garage/dashboard</span>
+      <div class="route-info">
+        <div class="route-page">GarageDashboard <span class="layout-badge layout-clean">CleanLayout</span></div>
+        <div class="route-desc">Dashboard de gestion du garage</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEXT -->
+  <div class="section" id="context">
+    <h2 class="section-title">
+      <span class="section-icon icon-purple">⚙️</span>
+      3. Contexte global — AppContext
+    </h2>
+    <p>Fichier : <code>src/context/AppContext.jsx</code></p>
+    <p>Source de vérité de l'application. Enveloppe toute l'app via <code>&lt;AppProvider&gt;</code>. Hook d'accès : <code>useApp()</code> (erreur si utilisé hors du Provider).</p>
+
+    <h3>État géré</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>appointments</code></td><td>Array</td><td>Liste des RDV — initialisée depuis <code>mockData.appointments</code></td></tr>
+          <tr><td><code>bookingState</code></td><td>Object</td><td><code>{ step, service, date, time, clientInfo }</code> — état du tunnel de réservation</td></tr>
+          <tr><td><code>garageAuth</code></td><td>Object</td><td><code>{ isAuthenticated: bool, user: object }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Fonctions exposées</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fonction</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>resetBooking()</code></td><td>Réinitialise <code>bookingState</code> à l'étape 1</td></tr>
+          <tr><td><code>updateBookingStep(step, data)</code></td><td>Fusionne des données dans <code>bookingState</code></td></tr>
+          <tr><td><code>createAppointment(data)</code></td><td>Crée un RDV avec ID auto (<code>RDV-001</code>…), statut <code>pending</code>, timestamp actuel</td></tr>
+          <tr><td><code>updateAppointmentStatus(id, status)</code></td><td>Met à jour le statut d'un RDV existant par son ID</td></tr>
+          <tr><td><code>loginGarage({ email, password })</code></td><td>Auth garage — retourne <code>true</code> / <code>false</code></td></tr>
+          <tr><td><code>logoutGarage()</code></td><td>Déconnecte le garage</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MOCKDATA -->
+  <div class="section" id="mockdata">
+    <h2 class="section-title">
+      <span class="section-icon icon-orange">🗄️</span>
+      4. Données mockées — mockData.js
+    </h2>
+    <p>Fichier : <code>src/data/mockData.js</code> — Simule un backend. Tous les exports sont des tableaux/objets JS statiques.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Export</th><th>Contenu</th></tr></thead>
+        <tbody>
+          <tr><td><code>services</code></td><td>8 prestations : vidange (79€/45min), freinage (149€), pneumatiques (25€), climatisation (89€), diagnostic (49€), batterie (15€), échappement (199€), autre. Champs : <code>id, name, description, duration, price, category, icon, image, prerequisites</code></td></tr>
+          <tr><td><code>serviceCategories</code></td><td>5 catégories : all, entretien, reparation, diagnostic, autre</td></tr>
+          <tr><td><code>timeSlots</code></td><td>Créneaux pour 2 dates fixes (08:00 → 17:30) avec <code>{ time, available }</code></td></tr>
+          <tr><td><code>appointments</code></td><td>5 RDV d'exemple avec statuts variés (confirmed, pending ×2, completed, cancelled)</td></tr>
+          <tr><td><code>garageStats</code></td><td>totalAppointments: 156, pendingAppointments: 8, confirmedAppointments: 12, noShowRate: 5.2%, averageRating: 4.7</td></tr>
+          <tr><td><code>garageHours</code></td><td>Horaires lun–sam (sam matin), dimanche fermé</td></tr>
+          <tr><td><code>garageInfo</code></td><td>Nom, adresse, téléphone, email, SIRET du "Garage Auto Pro"</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════ PAGES ═══════ -->
+  <h2 style="font-size:1.6rem;font-weight:900;color:var(--dark);margin:3rem 0 1.5rem;padding-bottom:0.75rem;border-bottom:3px solid var(--blue-light);">5. Pages</h2>
+
+  <!-- HOME -->
+  <div class="section" id="home">
+    <h2 class="section-title">
+      <span class="section-icon icon-blue">🏠</span>
+      Home — Page d'accueil
+    </h2>
+    <div class="comp-header">
+      <div>Route : <code>/</code> &nbsp;|&nbsp; Layout : <span class="layout-badge layout-main">MainLayout</span></div>
+      <span class="comp-file">src/pages/Home/Home.jsx</span>
+    </div>
+    <p>Page marketing sans état. Données entièrement en dur.</p>
+
+    <h3>Sections dans l'ordre</h3>
+    <div class="steps-list">
+      <div class="step-item"><div class="step-number">1</div><div><div class="step-content-label">Hero</div><div class="step-content-desc"><code>HeroCarousel</code> plein écran — 3 slides (<code>/images/hero-1.jpg</code>, <code>-2</code>, <code>-3</code>) + indicateur de scroll animé</div></div></div>
+      <div class="step-item"><div class="step-number">2</div><div><div class="step-content-label">Avantages</div><div class="step-content-desc">6 cartes (Réservation 24/7, Gain de temps, Rappels, Sécurité, Mobile, Prestations) avec animation cascade</div></div></div>
+      <div class="step-item"><div class="step-number">3</div><div><div class="step-content-label">Comment ça marche</div><div class="step-content-desc">4 étapes numérotées 01→04 avec animations au scroll</div></div></div>
+      <div class="step-item"><div class="step-number">4</div><div><div class="step-content-label">Statistiques</div><div class="step-content-desc">4 compteurs : 10 000+ RDV, 150+ garages, 98% satisfaction, -40% no-show</div></div></div>
+      <div class="step-item"><div class="step-number">5</div><div><div class="step-content-label">Témoignages</div><div class="step-content-desc">3 avis clients avec notation étoiles</div></div></div>
+      <div class="step-item"><div class="step-number">6</div><div><div class="step-content-label">CTA final</div><div class="step-content-desc">Bouton vers <code>/booking</code></div></div></div>
+    </div>
+    <p><strong>Composants utilisés :</strong> <code>Button</code>, <code>HeroCarousel</code></p>
+  </div>
+
+  <!-- BOOKING -->
+  <div class="section" id="booking">
+    <h2 class="section-title">
+      <span class="section-icon icon-blue">📅</span>
+      Booking — Prise de rendez-vous
+    </h2>
+    <div class="comp-header">
+      <div>Route : <code>/booking</code> &nbsp;|&nbsp; Layout : <span class="layout-badge layout-main">MainLayout</span></div>
+      <span class="comp-file">src/pages/Booking/Booking.jsx</span>
+    </div>
+    <p>Formulaire multi-étapes en 4 étapes avec barre de progression.</p>
+
+    <h3>Les 4 étapes</h3>
+    <div class="steps-list">
+      <div class="step-item"><div class="step-number">1</div><div><div class="step-content-label">Prestation</div><div class="step-content-desc">5 catégories (hover) → liste de prestations avec animation stagger</div></div></div>
+      <div class="step-item"><div class="step-number">2</div><div><div class="step-content-label">Garage</div><div class="step-content-desc">Recherche par ville via <strong>Nominatim + Overpass API OSM</strong> (rayon 10 km, max 20 résultats)</div></div></div>
+      <div class="step-item"><div class="step-number">3</div><div><div class="step-content-label">Date &amp; Heure</div><div class="step-content-desc">14 prochains jours générés dynamiquement + créneaux simulés (<code>Math.random</code>)</div></div></div>
+      <div class="step-item"><div class="step-number">4</div><div><div class="step-content-label">Vos infos</div><div class="step-content-desc">Formulaire client (prénom, nom, email, tél.) + véhicule (immat, marque, modèle, année) + notes</div></div></div>
+    </div>
+
+    <h3>Catégories de prestations</h3>
+    <div class="cards-grid">
+      <div class="info-card"><div class="info-card-label">Cat. 1</div><div class="info-card-value" style="font-size:0.9rem">Pneumatique &amp; tenue de route</div></div>
+      <div class="info-card"><div class="info-card-label">Cat. 2</div><div class="info-card-value" style="font-size:0.9rem">Freinage &amp; sécurité</div></div>
+      <div class="info-card"><div class="info-card-label">Cat. 3</div><div class="info-card-value" style="font-size:0.9rem">Mécanique &amp; diagnostics</div></div>
+      <div class="info-card"><div class="info-card-label">Cat. 4</div><div class="info-card-value" style="font-size:0.9rem">Entretien &amp; révision</div></div>
+      <div class="info-card"><div class="info-card-label">Cat. 5</div><div class="info-card-value" style="font-size:0.9rem">Électrique &amp; Hybride</div></div>
+    </div>
+
+    <h3>État (useState)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Variable</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>step</code> (1–4)</td><td>Étape courante</td></tr>
+          <tr><td><code>selectedCategory</code></td><td>Catégorie sélectionnée</td></tr>
+          <tr><td><code>hoveredCategory</code></td><td>Catégorie survolée (affichage du panneau prestations)</td></tr>
+          <tr><td><code>selectedService</code></td><td><code>{ id, name, duration, category }</code></td></tr>
+          <tr><td><code>selectedDate</code></td><td>Date ISO choisie</td></tr>
+          <tr><td><code>selectedTime</code></td><td>Heure choisie</td></tr>
+          <tr><td><code>formData</code></td><td>Infos client et véhicule</td></tr>
+          <tr><td><code>city</code></td><td>Ville saisie pour la recherche garage</td></tr>
+          <tr><td><code>garages</code></td><td>Résultats API Overpass</td></tr>
+          <tr><td><code>selectedGarage</code></td><td>Garage retenu</td></tr>
+          <tr><td><code>garageLoading / garageError</code></td><td>États de la requête API</td></tr>
+          <tr><td><code>isSubmitting</code></td><td>Bool de soumission finale</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Soumission :</strong> <code>handleSubmit()</code> appelle <code>createAppointment()</code>, attend 1,5 s, redirige vers <code>/booking/confirmation</code> avec <code>{ state: { appointment } }</code>.</p>
+    <p><strong>Composants utilisés :</strong> <code>Button</code>, <code>Input</code>, <code>TimeSlot</code>, <code>Card</code>, <code>CardContent</code></p>
+  </div>
+
+  <!-- CONFIRMATION -->
+  <div class="section" id="confirmation">
+    <h2 class="section-title">
+      <span class="section-icon icon-green">✅</span>
+      BookingConfirmation
+    </h2>
+    <div class="comp-header">
+      <div>Route : <code>/booking/confirmation</code> &nbsp;|&nbsp; Layout : <span class="layout-badge layout-main">MainLayout</span></div>
+      <span class="comp-file">src/pages/BookingConfirmation/BookingConfirmation.jsx</span>
+    </div>
+    <p>Reçoit <code>appointment</code> depuis <code>location.state</code>. Si absent → écran d'erreur avec lien vers <code>/booking</code>.</p>
+    <h3>Sections</h3>
+    <ul style="padding-left:1.5rem;color:#475569;font-size:0.9rem;line-height:2">
+      <li>Header animé avec icône <code>CheckCircle</code> (spring Framer Motion)</li>
+      <li>Carte récapitulatif : ID RDV, prestation, date, heure, client, véhicule</li>
+      <li>Instructions "Et maintenant ?" (email + WhatsApp automatique)</li>
+      <li>Boutons : Retour accueil, Nouveau RDV, Imprimer (<code>window.print()</code>), Partager WhatsApp</li>
+    </ul>
+    <p><strong>Composants utilisés :</strong> <code>Button</code>, <code>Card</code>, <code>CardContent</code></p>
+  </div>
+
+  <!-- CLIENT LOGIN -->
+  <div class="section" id="client">
+    <h2 class="section-title">
+      <span class="section-icon icon-blue">👤</span>
+      ClientLogin — Espace Client
+    </h2>
+    <div class="comp-header">
+      <div>Route : <code>/client</code> &nbsp;|&nbsp; Layout : <span class="layout-badge layout-main">MainLayout</span></div>
+      <span class="comp-file">src/pages/ClientLogin/ClientLogin.jsx</span>
+    </div>
+    <div class="warning">⚠️ <strong>Stub</strong> — Authentification non implémentée. Affiche toujours : "Connexion client non encore disponible."</div>
+    <h3>Sections</h3>
+    <ul style="padding-left:1.5rem;color:#475569;font-size:0.9rem;line-height:2">
+      <li><strong>Gauche</strong> : branding bleu — 3 fonctionnalités (Suivi RDV, Historique, Rappels)</li>
+      <li><strong>Droite</strong> : formulaire email + mot de passe + "Mot de passe oublié ?" + bouton "Prendre un rendez-vous"</li>
+    </ul>
+    <p><strong>Composants utilisés :</strong> <code>Button</code>, <code>Input</code>, <code>Card</code>, <code>CardContent</code></p>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div class="section" id="admin">
+    <h2 class="section-title">
+      <span class="section-icon icon-red">🛡️</span>
+      AdminLogin — Super Admin
+    </h2>
+    <div class="comp-header">
+      <div>Route : <code>/admin</code> &nbsp;|&nbsp; Layout : <span class="layout-badge layout-clean">CleanLayout</span></div>
+      <span class="comp-file">src/pages/AdminLogin/AdminLogin.jsx</span>
+    </div>
+    <p>Accès réservé aux administrateurs MecanoLib. Design sombre.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Champ</th><th>Valeur</th></tr></thead>
+        <tbody>
+          <tr><td>Email</td><td><code>admin@mecanolib.fr</code></td></tr>
+          <tr><td>Mot de passe</td><td><code>Admin@2026</code></td></tr>
+          <tr><td>Redirection</td><td><code>/admin/dashboard</code> (route à créer)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="warning">⚠️ Les identifiants sont en clair dans le code source client — à remplacer par une vraie API en production.</div>
+    <p><strong>Composants utilisés :</strong> <code>Card</code>, <code>CardContent</code></p>
+  </div>
+
+  <!-- GARAGE LOGIN -->
+  <div class="section" id="garage-login">
+    <h2 class="section-title">
+      <span class="section-icon icon-orange">🔑</span>
+      GarageLogin — Espace Garage
+    </h2>
+    <div class="comp-header">
+      <div>Route : <code>/garage</code> &nbsp;|&nbsp; Layout : <span class="layout-badge layout-clean">CleanLayout</span></div>
+      <span class="comp-file">src/pages/GarageLogin/GarageLogin.jsx</span>
+    </div>
+    <p>Connexion pour les garages partenaires. Si déjà connecté → redirige automatiquement vers <code>/garage/dashboard</code>.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Champ</th><th>Valeur</th></tr></thead>
+        <tbody>
+          <tr><td>Email</td><td><code>garage@mecanolib.fr</code></td></tr>
+          <tr><td>Mot de passe</td><td><code>password</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Composants utilisés :</strong> <code>Button</code>, <code>Input</code>, <code>Card</code>, <code>CardContent</code></p>
+  </div>
+
+  <!-- GARAGE DASHBOARD -->
+  <div class="section" id="garage-dashboard">
+    <h2 class="section-title">
+      <span class="section-icon icon-green">📊</span>
+      GarageDashboard — Tableau de bord
+    </h2>
+    <div class="comp-header">
+      <div>Route : <code>/garage/dashboard</code> &nbsp;|&nbsp; Layout : <span class="layout-badge layout-clean">CleanLayout</span></div>
+      <span class="comp-file">src/pages/GarageDashboard/GarageDashboard.jsx</span>
+    </div>
+    <p>Interface complète de gestion. Redirige vers <code>/garage</code> si non authentifié.</p>
+
+    <h3>Onglets</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Onglet</th><th>Contenu</th></tr></thead>
+        <tbody>
+          <tr><td><code>appointments</code></td><td>Statistiques + liste filtrables des RDV avec actions</td></tr>
+          <tr><td><code>calendar</code></td><td>Vue agenda jour par jour (08h–17h30), navigation ±1 jour</td></tr>
+          <tr><td><code>clients</code></td><td>Non implémenté</td></tr>
+          <tr><td><code>settings</code></td><td>Non implémenté</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>État (useState)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Variable</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>activeTab</code></td><td>Onglet actif</td></tr>
+          <tr><td><code>statusFilter</code></td><td>Filtre statut (all, pending, confirmed…)</td></tr>
+          <tr><td><code>searchQuery</code></td><td>Recherche texte (nom, email, immat, ID)</td></tr>
+          <tr><td><code>selectedAppointment</code></td><td>RDV ouvert dans la modale de détail</td></tr>
+          <tr><td><code>isDetailModalOpen</code></td><td>Visibilité de la modale</td></tr>
+          <tr><td><code>currentDate</code></td><td>Date affichée dans l'agenda</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Composants utilisés :</strong> <code>Button</code>, <code>Input</code>, <code>Card</code>, <code>CardContent</code>, <code>StatusBadge</code>, <code>Modal</code></p>
+  </div>
+
+  <!-- ═══════ COMPOSANTS ═══════ -->
+  <h2 style="font-size:1.6rem;font-weight:900;color:var(--dark);margin:3rem 0 1.5rem;padding-bottom:0.75rem;border-bottom:3px solid var(--blue-light);">6. Composants</h2>
+  <p style="color:#475569;font-size:0.9rem;margin-bottom:1.5rem">Tous exportés depuis <code>src/components/index.js</code>.</p>
+
+  <!-- NAVBAR -->
+  <div class="section" id="navbar">
+    <h2 class="section-title"><span class="section-icon icon-blue">🔝</span>Navbar</h2>
+    <div class="comp-header"><div>Présent dans : <strong>MainLayout</strong> (toutes les pages publiques)</div><span class="comp-file">src/components/Navbar/Navbar.jsx</span></div>
+    <p>Barre de navigation fixe en haut. Toujours visible — fond blanc semi-transparent + blur.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Label</th><th>Route</th></tr></thead>
+      <tbody>
+        <tr><td>Accueil</td><td><code>/</code></td></tr>
+        <tr><td>Prendre RDV</td><td><code>/booking</code></td></tr>
+        <tr><td>Espace Client</td><td><code>/client</code></td></tr>
+        <tr><td>Espace Garage</td><td><code>/garage</code></td></tr>
+        <tr><td>Connexion (CTA)</td><td><code>/admin</code></td></tr>
+      </tbody>
+    </table></div>
+    <ul style="padding-left:1.5rem;color:#475569;font-size:0.9rem;line-height:2;margin-top:0.75rem">
+      <li>Devient légèrement plus opaque au scroll (&gt; 20 px) via <code>navbar-scrolled</code></li>
+      <li>Lien actif mis en évidence via <code>useLocation()</code></li>
+      <li>Menu hamburger sur mobile avec fermeture automatique au clic</li>
+    </ul>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="section" id="footer">
+    <h2 class="section-title"><span class="section-icon icon-blue">📄</span>Footer</h2>
+    <div class="comp-header"><div>Présent dans : <strong>MainLayout</strong></div><span class="comp-file">src/components/Footer/Footer.jsx</span></div>
+    <p>Pied de page statique. Aucune prop.</p>
+    <p>Colonnes : Produit, Entreprise, Légal, Contacts. Icônes sociales en SVG inline. Année dynamique : <code>new Date().getFullYear()</code></p>
+  </div>
+
+  <!-- BUTTON -->
+  <div class="section" id="button">
+    <h2 class="section-title"><span class="section-icon icon-blue">🔘</span>Button</h2>
+    <span class="comp-file">src/components/Button/Button.jsx</span>
+    <p style="margin-top:0.75rem">Bouton réutilisable générique. Utilise <code>React.forwardRef</code>.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Prop</th><th>Type</th><th>Défaut</th><th>Valeurs possibles</th></tr></thead>
+      <tbody>
+        <tr><td><code>variant</code></td><td>string</td><td><code>'default'</code></td><td>default, primary, secondary, outline, ghost, danger, success</td></tr>
+        <tr><td><code>size</code></td><td>string</td><td><code>'default'</code></td><td>default, sm, lg, icon</td></tr>
+        <tr><td><code>loading</code></td><td>bool</td><td><code>false</code></td><td>Affiche un spinner, désactive le bouton</td></tr>
+        <tr><td><code>disabled</code></td><td>bool</td><td><code>false</code></td><td>—</td></tr>
+        <tr><td><code>className</code></td><td>string</td><td><code>''</code></td><td>Classes CSS additionnelles</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- CARD -->
+  <div class="section" id="card">
+    <h2 class="section-title"><span class="section-icon icon-blue">🃏</span>Card</h2>
+    <span class="comp-file">src/components/Card/Card.jsx</span>
+    <p style="margin-top:0.75rem">Conteneur carte avec sous-composants. Tous utilisent <code>React.forwardRef</code>.</p>
+    <p><strong>Exports :</strong> <code>Card</code>, <code>CardHeader</code>, <code>CardTitle</code>, <code>CardDescription</code>, <code>CardContent</code></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Prop</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>hover</code></td><td>bool</td><td>Ajoute un effet hover (élévation)</td></tr>
+        <tr><td><code>clickable</code></td><td>bool</td><td>Rend la carte cliquable (curseur pointer)</td></tr>
+        <tr><td><code>onClick</code></td><td>func</td><td>Callback de clic</td></tr>
+        <tr><td><code>className</code></td><td>string</td><td>Classes additionnelles</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="section" id="input">
+    <h2 class="section-title"><span class="section-icon icon-blue">✏️</span>Input</h2>
+    <span class="comp-file">src/components/Input/Input.jsx</span>
+    <p style="margin-top:0.75rem">Champ de formulaire avec label intégré. Utilise <code>React.forwardRef</code>.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Prop</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>label</code></td><td>string</td><td>Label affiché au-dessus du champ</td></tr>
+        <tr><td><code>error</code></td><td>string</td><td>Message d'erreur rouge (priorité sur helperText)</td></tr>
+        <tr><td><code>helperText</code></td><td>string</td><td>Texte d'aide gris en dessous</td></tr>
+        <tr><td><code>icon</code></td><td>component</td><td>Icône Lucide à gauche du champ</td></tr>
+        <tr><td><code>required</code></td><td>bool</td><td>Affiche un <code>*</code> rouge dans le label</td></tr>
+        <tr><td><code>type</code></td><td>string</td><td>Type HTML (défaut : <code>'text'</code>)</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="section" id="modal">
+    <h2 class="section-title"><span class="section-icon icon-purple">💬</span>Modal</h2>
+    <span class="comp-file">src/components/Modal/Modal.jsx</span>
+    <p style="margin-top:0.75rem">Fenêtre modale générique avec backdrop.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Prop</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>isOpen</code></td><td>bool</td><td>Contrôle l'affichage</td></tr>
+        <tr><td><code>onClose</code></td><td>func</td><td>Callback de fermeture</td></tr>
+        <tr><td><code>title</code></td><td>string</td><td>Titre du header</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td>Sous-titre optionnel</td></tr>
+        <tr><td><code>children</code></td><td>node</td><td>Contenu principal</td></tr>
+        <tr><td><code>footer</code></td><td>node</td><td>Contenu du bas de modale</td></tr>
+        <tr><td><code>size</code></td><td>string</td><td>sm, md, lg, xl, full</td></tr>
+      </tbody>
+    </table></div>
+    <ul style="padding-left:1.5rem;color:#475569;font-size:0.9rem;line-height:2;margin-top:0.75rem">
+      <li>Bloque le scroll de la page quand ouverte</li>
+      <li>Clic sur le backdrop → fermeture</li>
+      <li>Retourne <code>null</code> si <code>isOpen === false</code></li>
+    </ul>
+  </div>
+
+  <!-- LOGO -->
+  <div class="section" id="logo">
+    <h2 class="section-title"><span class="section-icon icon-orange">⚙️</span>Logo</h2>
+    <span class="comp-file">src/components/Logo/Logo.jsx</span>
+    <p style="margin-top:0.75rem">Logo animé avec deux engrenages rotatifs (Framer Motion).</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Prop</th><th>Défaut</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>size</code></td><td><code>'medium'</code></td><td>small (40px), medium (56px), large (80px), xl (120px)</td></tr>
+        <tr><td><code>animated</code></td><td><code>true</code></td><td>Active/désactive les animations</td></tr>
+        <tr><td><code>className</code></td><td><code>''</code></td><td>Classes additionnelles</td></tr>
+      </tbody>
+    </table></div>
+    <ul style="padding-left:1.5rem;color:#475569;font-size:0.9rem;line-height:2;margin-top:0.75rem">
+      <li>Engrenage externe : rotation 360° en 8 s infini</li>
+      <li>Engrenage interne : rotation -360° en 6 s infini</li>
+      <li>Pulse central : scale + opacité oscillants en 2 s</li>
+      <li>Hover : scale 1.05</li>
+    </ul>
+  </div>
+
+  <!-- HEROCAROUSEL -->
+  <div class="section" id="herocarousel">
+    <h2 class="section-title"><span class="section-icon icon-blue">🎠</span>HeroCarousel</h2>
+    <span class="comp-file">src/components/HeroCarousel/HeroCarousel.jsx</span>
+    <p style="margin-top:0.75rem">Carrousel fullscreen animé pour la section hero.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Prop</th><th>Défaut</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>images</code></td><td><code>[]</code></td><td>Tableau de slides <code>{ src, badge, title, subtitle, cta }</code></td></tr>
+        <tr><td><code>autoPlay</code></td><td><code>true</code></td><td>Défilement automatique</td></tr>
+        <tr><td><code>interval</code></td><td><code>5000</code></td><td>Intervalle entre slides (ms)</td></tr>
+        <tr><td><code>showIndicators</code></td><td><code>true</code></td><td>Points de pagination</td></tr>
+        <tr><td><code>showArrows</code></td><td><code>true</code></td><td>Flèches précédent/suivant</td></tr>
+        <tr><td><code>overlay</code></td><td><code>true</code></td><td>Overlay sombre sur l'image</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- SERVICECARD -->
+  <div class="section" id="servicecard">
+    <h2 class="section-title"><span class="section-icon icon-orange">🔧</span>ServiceCard</h2>
+    <span class="comp-file">src/components/ServiceCard/ServiceCard.jsx</span>
+    <p style="margin-top:0.75rem">Carte de sélection d'une prestation de service.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Prop</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>icon</code></td><td>Composant icône Lucide</td></tr>
+        <tr><td><code>title</code></td><td>Nom de la prestation</td></tr>
+        <tr><td><code>description</code></td><td>Description courte</td></tr>
+        <tr><td><code>duration</code></td><td>Durée en minutes</td></tr>
+        <tr><td><code>price</code></td><td>Prix indicatif en €</td></tr>
+        <tr><td><code>selected</code></td><td>Bool — style surligné si sélectionné</td></tr>
+        <tr><td><code>onClick</code></td><td>Callback de sélection</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- STATUSBADGE -->
+  <div class="section" id="statusbadge">
+    <h2 class="section-title"><span class="section-icon icon-green">🏷️</span>StatusBadge</h2>
+    <span class="comp-file">src/components/StatusBadge/StatusBadge.jsx</span>
+    <p style="margin-top:0.75rem">Badge coloré indiquant le statut d'un rendez-vous.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Statut</th><th>Libellé</th><th>Couleur</th></tr></thead>
+      <tbody>
+        <tr><td><code>pending</code></td><td>En attente</td><td style="color:#ea580c">● Orange</td></tr>
+        <tr><td><code>confirmed</code></td><td>Confirmé</td><td style="color:#16a34a">● Vert</td></tr>
+        <tr><td><code>refused</code></td><td>Refusé</td><td style="color:#dc2626">● Rouge</td></tr>
+        <tr><td><code>cancelled_client</code></td><td>Annulé (client)</td><td style="color:#64748b">● Gris</td></tr>
+        <tr><td><code>cancelled_garage</code></td><td>Annulé (garage)</td><td style="color:#64748b">● Gris</td></tr>
+        <tr><td><code>completed</code></td><td>Terminé</td><td style="color:#2563eb">● Bleu</td></tr>
+        <tr><td><code>no_show</code></td><td>No-show</td><td style="color:#dc2626">● Rouge</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- TIMESLOT -->
+  <div class="section" id="timeslot">
+    <h2 class="section-title"><span class="section-icon icon-blue">🕐</span>TimeSlot</h2>
+    <span class="comp-file">src/components/TimeSlot/TimeSlot.jsx</span>
+    <p style="margin-top:0.75rem">Bouton de sélection d'un créneau horaire.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Prop</th><th>Défaut</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>time</code></td><td>—</td><td>Heure affichée (ex. "09:30")</td></tr>
+        <tr><td><code>available</code></td><td><code>true</code></td><td>Si <code>false</code> → affichage grisé non cliquable</td></tr>
+        <tr><td><code>selected</code></td><td><code>false</code></td><td>Style actif + icône Check</td></tr>
+        <tr><td><code>onClick</code></td><td>—</td><td>Callback de sélection</td></tr>
+      </tbody>
+    </table></div>
+    <p>Rendu conditionnel : <code>&lt;div&gt;</code> non-interactif si indisponible, <code>&lt;button&gt;</code> sinon.</p>
+  </div>
+
+  <!-- ATTENTION -->
+  <div class="section" id="attention">
+    <h2 class="section-title"><span class="section-icon icon-red">⚠️</span>7. Points d'attention</h2>
+
+    <div class="attention-list">
+      <div class="attention-item error">
+        <div class="attention-num">1</div>
+        <div>
+          <div class="attention-title">Route manquante</div>
+          <div class="attention-desc"><code>/admin/dashboard</code> est référencée dans <code>AdminLogin.jsx</code> après connexion réussie, mais cette route n'est pas déclarée dans <code>App.jsx</code>.</div>
+        </div>
+      </div>
+      <div class="attention-item warn">
+        <div class="attention-num">2</div>
+        <div>
+          <div class="attention-title">Auth côté client</div>
+          <div class="attention-desc">Les identifiants Admin (<code>admin@mecanolib.fr / Admin@2026</code>) et Garage (<code>garage@mecanolib.fr / password</code>) sont en clair dans le code source. À remplacer par une vraie API en production.</div>
+        </div>
+      </div>
+      <div class="attention-item info">
+        <div class="attention-num">3</div>
+        <div>
+          <div class="attention-title">Espace Client stub</div>
+          <div class="attention-desc">La page <code>/client</code> est un formulaire vide qui retourne toujours une erreur — aucune auth client implémentée.</div>
+        </div>
+      </div>
+      <div class="attention-item info">
+        <div class="attention-num">4</div>
+        <div>
+          <div class="attention-title">Créneaux aléatoires</div>
+          <div class="attention-desc">À l'étape 3 du Booking, les créneaux disponibles sont générés avec <code>Math.random()</code>, non liés aux données réelles du garage.</div>
+        </div>
+      </div>
+      <div class="attention-item info">
+        <div class="attention-num">5</div>
+        <div>
+          <div class="attention-title">API OSM externes</div>
+          <div class="attention-desc">La recherche de garages (étape 2) utilise <strong>Nominatim</strong> + <strong>Overpass API</strong> (OpenStreetMap). Gratuites, sans clé API, mais soumises aux limites de débit d'OSM.</div>
+        </div>
+      </div>
+      <div class="attention-item info">
+        <div class="attention-num">6</div>
+        <div>
+          <div class="attention-title">Onglets non implémentés</div>
+          <div class="attention-desc">Dans <code>GarageDashboard</code>, les onglets "Clients" et "Paramètres" existent dans le menu mais n'ont pas de contenu.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center;color:#94a3b8;font-size:0.8rem;margin-top:3rem">MecanoLib — Documentation générée le 30 mars 2026</p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,99 @@
+.time-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.625rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  min-width: 80px;
+}
+
+/* Available state */
+.time-slot-available {
+  background: white;
+  border-color: #e5e7eb;
+  color: #374151;
+}
+
+.time-slot-available:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px rgba(59, 130, 246, 0.2);
+}
+
+/* Selected state */
+.time-slot-selected {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+}
+
+.time-slot-selected:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
+}
+
+/* Unavailable state */
+.time-slot-unavailable {
+  background: #f3f4f6;
+  border-color: transparent;
+  color: #9ca3af;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Size variants */
+.time-slot-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  min-width: 70px;
+}
+
+.time-slot-lg {
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  min-width: 100px;
+}
+
+/* Grid layout helper */
+.time-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Morning/afternoon indicator */
+.time-slot-period {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.time-slot-period::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.time-slot-period::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}

@@ -1,19 +1,26 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { registerGarage } from "../../services/api";
 
 function RegisterGarage() {
 
     const [form, setForm] = useState({
         nom_garage: "",
-        telephone_garage: "",
-        email_garage: "",
+        telephone: "",
+        email: "",
         siret: "",
         tva: "",
         adresse: "",
         cp: "",
         ville: "",
-        code_insee: ""
+        code_insee: "",
+        id_ville: "",
+        mdp: ""
     });
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
     const [cpSuggestions, setCpSuggestions] = useState([]);
     const [villeSuggestions, setVilleSuggestions] = useState([]);
@@ -98,39 +105,64 @@ function RegisterGarage() {
     const handleSubmit = async (e) => {
 
         e.preventDefault();
+        setError("");
+        setSuccess("");
 
-        const response = await fetch("http://127.0.0.1:8000/api/v1/garage/register", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
+        if (!form.id_ville) {
+            setError("L'identifiant de la ville est requis (id_ville).");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await registerGarage({
                 nom_garage: form.nom_garage,
-                telephone_garage: form.telephone_garage,
-                email_garage: form.email_garage,
+                email: form.email,
+                telephone: form.telephone,
+                adresse: form.adresse,
                 siret: form.siret,
                 tva: form.tva,
-                adresse_garage: form.adresse,
-                cp: form.cp,
-                ville: form.ville,
-                code_insee: form.code_insee
-            })
-        });
+                id_ville: Number(form.id_ville),
+                mdp: form.mdp
+            });
 
-
+            setSuccess("Garage ajoute avec succes.");
+            setForm({
+                nom_garage: "",
+                telephone: "",
+                email: "",
+                siret: "",
+                tva: "",
+                adresse: "",
+                cp: "",
+                ville: "",
+                code_insee: "",
+                id_ville: "",
+                mdp: ""
+            });
+        } catch (err) {
+            setError(err.message || "Inscription garage impossible");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <div className="container mt-5">
             <h2>Inscription Garage</h2>
 
+            {error && <div className="alert alert-danger">{error}</div>}
+            {success && <div className="alert alert-success">{success}</div>}
+
             <form onSubmit={handleSubmit}>
 
                 <input className="form-control mb-3" placeholder="Nom du garage" name="nom_garage" onChange={handleChange} />
-                <input className="form-control mb-3" placeholder="Téléphone" name="telephone_garage" onChange={handleChange} />
-                <input className="form-control mb-3" placeholder="Email" name="email_garage" onChange={handleChange} />
+                <input className="form-control mb-3" placeholder="Telephone" name="telephone" onChange={handleChange} value={form.telephone} />
+                <input className="form-control mb-3" placeholder="Email" name="email" onChange={handleChange} value={form.email} />
                 <input className="form-control mb-3" placeholder="SIRET" name="siret" onChange={handleChange} />
                 <input className="form-control mb-3" placeholder="TVA" name="tva" onChange={handleChange} />
+                <input className="form-control mb-3" placeholder="Mot de passe" type="password" name="mdp" onChange={handleChange} value={form.mdp} />
 
                 {/* ADRESSE */}
 
@@ -138,6 +170,7 @@ function RegisterGarage() {
                     className="form-control mt-3"
                     placeholder="Adresse"
                     value={form.adresse}
+                    name="adresse"
                     onChange={(e) => searchAdresse(e.target.value)}
                 />
 
@@ -165,6 +198,7 @@ function RegisterGarage() {
                 <input
                     className="form-control"
                     placeholder="Code postal"
+                    name="cp"
                     value={form.cp}
                     onChange={(e) => searchCP(e.target.value)}
                 />
@@ -192,6 +226,7 @@ function RegisterGarage() {
                 <input
                     className="form-control mt-3"
                     placeholder="Ville"
+                    name="ville"
                     value={form.ville}
                     onChange={(e) => searchVille(e.target.value)}
                 />
@@ -217,9 +252,16 @@ function RegisterGarage() {
                 {/* INPUT HIDDEN CODE INSEE */}
 
                 <input type="hidden" name="code_insee" value={form.code_insee} />
+                <input
+                    className="form-control mt-3"
+                    placeholder="ID Ville (requis par l'API)"
+                    name="id_ville"
+                    value={form.id_ville}
+                    onChange={handleChange}
+                />
 
-                <button className="btn btn-primary mt-4">
-                    Inscription
+                <button className="btn btn-primary mt-4" disabled={loading}>
+                    {loading ? "Inscription..." : "Inscription"}
                 </button>
 
             </form>
