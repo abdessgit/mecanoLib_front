@@ -6,6 +6,7 @@ import Header from "./components/Header/Header";
 import ForgetPassword from "./components/AuthPage/ForgetPassword";
 import DashboardSuperAdmin from "./components/dashboard/superAdmin/DashboardSuperAdmin";
 import DashboardClient from "./components/dashboard/client/DachboardClient";
+import ResetPassword from "./components/AuthPage/ResetPassword";
 function App() {
     return (
         <>
@@ -17,6 +18,7 @@ function App() {
                 <Route path="/dashboardGarage" element={<DashboardGarage />} />
                 <Route path="/dashboardClient" element={<DashboardClient />} />
                 <Route path="/DashboardSuperAdmin" element={<DashboardSuperAdmin />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
         </>
     );

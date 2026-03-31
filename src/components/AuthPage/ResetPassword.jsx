@@ -1,14 +1,22 @@
-import React, { useState } from "react";
-import { useSearchParams } from "react-router-dom"; // pour récupérer le token dans l'URL
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const ResetPassword = () => {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const token = searchParams.get("token"); // récupère le token depuis /reset-password?token=xxxx
+
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
-    const [searchParams] = useSearchParams();
-    const token = searchParams.get("token"); // récupère le token depuis /reset-password?token=xxxx
+    // 🔹 Redirection si pas de token
+    useEffect(() => {
+        if (!token) {
+            navigate("/auth"); // redirige vers la page de login
+        }
+    }, [token, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -23,9 +31,7 @@ const ResetPassword = () => {
         try {
             const res = await fetch("http://127.0.0.1:8000/api/v1/users/reset_password", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token, password }),
             });
 

@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AuthConnexion } from '../../connexion/AuthConnexion.jsx';
 import { useNavigate } from "react-router-dom";
+import "./DashboardGarage.css";
 
 export default function GarageRdv({ idGarage }) {
     const navigate = useNavigate();
@@ -123,43 +124,72 @@ export default function GarageRdv({ idGarage }) {
         logout();
         navigate("/auth");
     };
+
+
+
     if (!user) return <p>Chargement...</p>;
-    return (<div>
+    return (<div className="dashboard">
+        <div className="dashboard-card">
 
-        <h1>Bienvenue {user.nom}</h1>
+            <div className="header">
+                <h1>Bienvenue {user.nom}</h1>
+                <h3>Dashboard Garage</h3>
+                <button className="btn logout" onClick={handleLogout}>
+                    Se déconnecter
+                </button>
+            </div>
 
-        <button onClick={handleLogout}>Se déconnecter</button>
+            {!is2FARequired && (
+                <div className="status success">Vous êtes connecté</div>
+            )}
 
-        {!is2FARequired && <p>Vous êtes connecté</p>}
+            <div className="security-section">
+                <h2> Sécurité du compte</h2>
 
-        <h2>Sécurité</h2>
+                <div className="btn-group">
+                    <button
+                        className="btn primary"
+                        onClick={activer2FA}
+                        disabled={is2FAActivated}
+                    >
+                        {is2FAActivated ? "2FA déjà activée" : "Activer 2FA"}
+                    </button>
 
-        <button onClick={activer2FA} disabled={is2FAActivated}>
-            {is2FAActivated ? "2FA déjà activée " : "Activer 2FA"}</button>
-        <button onClick={desactiver2FA} disabled={!is2FAActivated} style={{ marginLeft: "10px" }}>
-            Désactiver 2FA </button>
+                    <button
+                        className="btn danger"
+                        onClick={desactiver2FA}
+                        disabled={!is2FAActivated}
+                    >
+                        Désactiver 2FA
+                    </button>
+                </div>
 
-        {messageActivation && (
-            <p style={{ color: "blue" }}>{messageActivation}</p>
-        )}
-        {is2FARequired && (
-            <form onSubmit={handle2FASubmit} style={{ marginTop: "20px" }}>
-                <input
-                    type="text"
-                    placeholder="Entrez le code 2FA"
-                    value={code2FA}
-                    onChange={(e) => setCode2FA(e.target.value)}
-                    required
-                />
-                <button type="submit">Valider 2FA</button>
+                {messageActivation && (
+                    <p className="info">{messageActivation}</p>
+                )}
 
-            </form>
-        )}
+                {is2FARequired && (
+                    <form onSubmit={handle2FASubmit} className="twofa-form">
+                        <input
+                            type="text"
+                            placeholder="Entrez le code 2FA"
+                            value={code2FA}
+                            onChange={(e) => setCode2FA(e.target.value)}
+                            required
+                        />
+                        <button className="btn primary" type="submit">
+                            Valider 2FA
+                        </button>
+                    </form>
+                )}
+                {messageValidation && (
+                    <p className="success">{messageValidation}</p>
+                )}
+            </div>
 
-        {/* Message après validation */}
-        {messageValidation && (
-            <p style={{ color: "green" }}>{messageValidation}</p>
-        )}
+        </div>
+
+
     </div>
     )
 }
