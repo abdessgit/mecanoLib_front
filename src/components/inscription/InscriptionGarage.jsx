@@ -133,6 +133,10 @@ function RegisterForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!form.consentement_client) {
+            setMessage("Vous devez accepter les conditions et la politique de confidentialité.");
+            return;
+        }
         // Validation pour Garage
         if (form.typeUtilisateur === "garage" && (!form.siret || !siretValid)) {
             setMessage("SIRET invalide");

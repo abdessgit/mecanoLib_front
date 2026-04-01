@@ -1,217 +1,278 @@
+/* =======================
+   RESET & BASE
+======================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: #f4f6f8;
+  color: #333 !important;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+input,
+select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+input:focus,
+select:focus {
+  border-color: #007bff;
+}
+
+/* =======================
+   DASHBOARD LAYOUT
+======================= */
 .client-dashboard {
-  min-height: calc(100vh - 88px);
-  padding: 8rem 1rem 4rem;
-  background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+  max-width: 1000px;
+  margin: 30px auto;
+  padding: 20px;
 }
 
-.client-dashboard-shell {
-  max-width: 1180px;
-  margin: 0 auto;
-}
-
+/* Header */
 .client-dashboard-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.client-dashboard-kicker {
-  display: inline-flex;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  font-size: 0.76rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.85rem;
+  background-color: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
 }
 
 .client-dashboard-header h1 {
-  font-size: clamp(2rem, 4vw, 2.7rem);
-  color: #0f172a;
-  margin-bottom: 0.45rem;
+  font-size: 24px;
+  color: #007bff;
+  margin-bottom: 5px;
 }
 
 .client-dashboard-header p {
-  color: #64748b;
-  max-width: 720px;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 10px;
 }
 
-.client-dashboard-logout {
-  flex-shrink: 0;
-}
-
-.client-dashboard-alert {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.9rem;
-  padding: 1rem 1.2rem;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1e40af;
-  border-radius: 18px;
-  margin-bottom: 1.5rem;
-}
-
-.client-dashboard-alert strong {
-  display: block;
-  margin-bottom: 0.15rem;
-}
-
-.client-dashboard-alert span {
-  color: #1e3a8a;
-  font-size: 0.92rem;
-}
-
-.client-dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.client-dashboard-card {
-  border-radius: 24px !important;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08) !important;
-}
-
-.client-dashboard-card-content {
-  padding: 1.5rem !important;
-}
-
-.client-dashboard-card-content h2 {
-  color: #0f172a;
-  margin-bottom: 1rem;
-}
-
-.client-dashboard-list {
-  display: grid;
-  gap: 0.9rem;
-}
-
-.client-dashboard-list div {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  color: #334155;
-}
-
-.client-dashboard-section-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.client-dashboard-section-header p {
-  color: #64748b;
-}
-
-.client-dashboard-book-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  text-decoration: none;
-  color: #1d4ed8;
-  font-weight: 700;
-}
-
-.client-dashboard-next-appointment {
-  padding: 1.15rem 1.2rem;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%);
+.client-dashboard-header button {
+  background-color: #ff4d4f;
   color: white;
-  margin-bottom: 1rem;
 }
 
-.client-dashboard-next-label {
-  display: block;
-  font-size: 0.76rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  opacity: 0.75;
-  margin-bottom: 0.45rem;
+.client-dashboard-header button:hover {
+  background-color: #e04344;
 }
 
-.client-dashboard-next-appointment strong {
-  display: block;
-  font-size: 1.2rem;
-  margin-bottom: 0.3rem;
+/* Notifications */
+.notification {
+  background-color: #e6f7ff;
+  color: #0050b3;
+  padding: 10px 20px;
+  border-left: 4px solid #1890ff;
+  margin-bottom: 15px;
+  border-radius: 6px;
 }
 
-.client-dashboard-next-appointment p,
-.client-dashboard-empty p {
-  color: inherit;
-  margin: 0;
+/* Status */
+.status.success {
+  color: #52c41a;
+  margin-bottom: 15px;
+  font-weight: bold;
 }
 
-.client-dashboard-empty {
-  padding: 1rem 1.2rem;
-  border-radius: 18px;
-  background: #f8fafc;
-  color: #64748b;
+/* =======================
+   SECURITY SECTION
+======================= */
+.security-section {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.client-dashboard-appointment-list {
-  display: grid;
-  gap: 0.8rem;
+.security-section h2 {
+  font-size: 20px;
+  color: #007bff;
+  margin-bottom: 15px;
 }
 
-.client-dashboard-appointment-item {
+.btn-group {
   display: flex;
-  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.btn.primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #0056b3;
+}
+
+.btn.danger {
+  background-color: #ff4d4f;
+  color: white;
+}
+
+.btn.danger:hover {
+  background-color: #e04344;
+}
+
+.info {
+  color: #fa8c16;
+  margin-top: 5px;
+}
+
+.success {
+  color: #52c41a;
+  margin-top: 5px;
+}
+
+.twofa-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.twofa-form input {
+  flex: 1;
+}
+
+/* =======================
+   VEHICULES
+======================= */
+.client-dashboard-vehicules {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.client-dashboard-vehicules h2 {
+  color: #007bff;
+  margin-bottom: 15px;
+}
+
+.client-dashboard-vehicule-item {
+  display: flex;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  align-items: center;
+  background-color: #f4f6f8;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
 }
 
-.client-dashboard-appointment-item strong {
-  display: block;
-  color: #0f172a;
-  margin-bottom: 0.25rem;
+.client-dashboard-vehicule-item button {
+  padding: 5px 10px;
+  font-size: 12px;
 }
 
-.client-dashboard-appointment-item span {
-  color: #64748b;
-  font-size: 0.92rem;
+.client-dashboard-vehicule-item button:hover {
+  opacity: 0.9;
 }
 
-.client-dashboard-status {
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: capitalize;
+/* =======================
+   ADD VEHICULE
+======================= */
+.client-dashboard-add-vehicule {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.client-dashboard-status-pending { background: #ffedd5; color: #c2410c; }
-.client-dashboard-status-confirmed { background: #dcfce7; color: #15803d; }
-.client-dashboard-status-completed { background: #dbeafe; color: #1d4ed8; }
-.client-dashboard-status-cancelled_client,
-.client-dashboard-status-cancelled_garage,
-.client-dashboard-status-refused,
-.client-dashboard-status-no_show { background: #fee2e2; color: #b91c1c; }
+.client-dashboard-add-vehicule h2 {
+  color: #007bff;
+  margin-bottom: 15px;
+}
 
-@media (max-width: 768px) {
-  .client-dashboard {
-    padding-top: 7rem;
-  }
+.client-dashboard-add-vehicule input,
+.client-dashboard-add-vehicule select {
+  margin-bottom: 10px;
+}
 
-  .client-dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+.client-dashboard-add-vehicule button {
+  background-color: #28a745;
+  color: white;
+  width: 100%;
+  margin-top: 10px;
+}
 
-  .client-dashboard-header,
-  .client-dashboard-section-header,
-  .client-dashboard-appointment-item {
+.client-dashboard-add-vehicule button:hover {
+  background-color: #218838;
+}
+/* =======================
+   RENDEZ-VOUS
+======================= */
+.client-dashboard-rdvs {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.client-dashboard-rdvs h2 {
+  color: #007bff;
+  margin-bottom: 15px;
+}
+
+.rdv-card {
+  background-color: #f4f6f8;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.rdv-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rdv-date {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.rdv-card div {
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #555;
+}
+/* =======================
+   RESPONSIVE
+======================= */
+@media screen and (max-width: 768px) {
+  .twofa-form {
     flex-direction: column;
-    align-items: stretch;
+  }
+
+  .client-dashboard-vehicule-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .client-dashboard-vehicule-item button {
+    margin-top: 5px;
   }
 }

@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import HomePage from "./components/Pages/HomePage";
+import HomePage from "./components/Pages/Home/HomePage";
 import AuthPage from "./components/AuthPage/AuthPage";
 import DashboardGarage from "./components/dashboard/garage/DashboardGarage";
 import Header from "./components/Header/Header";
@@ -7,6 +7,8 @@ import ForgetPassword from "./components/AuthPage/ForgetPassword";
 import DashboardSuperAdmin from "./components/dashboard/superAdmin/DashboardSuperAdmin";
 import DashboardClient from "./components/dashboard/client/DachboardClient";
 import ResetPassword from "./components/AuthPage/ResetPassword";
+import Footer from "./components/Footer/Footer";
+import Reserver from "./components/Pages/Reservation/Reserver";
 function App() {
     return (
         <>
@@ -19,7 +21,9 @@ function App() {
                 <Route path="/dashboardClient" element={<DashboardClient />} />
                 <Route path="/DashboardSuperAdmin" element={<DashboardSuperAdmin />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/reserver" element={<Reserver />} />
             </Routes>
+            <Footer />
         </>
     );
 }
