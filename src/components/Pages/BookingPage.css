@@ -1,0 +1,228 @@
+.booking-page {
+    min-height: calc(100vh - 72px);
+    padding: 40px 16px;
+    background:
+        radial-gradient(circle at 15% 10%, rgba(194, 166, 60, 0.25), transparent 35%),
+        linear-gradient(120deg, #0e172a 0%, #14213d 45%, #101828 100%);
+    color: #f8fafc;
+}
+
+.booking-hero {
+    width: min(960px, 100%);
+    margin: 0 auto 20px auto;
+}
+
+.booking-kicker {
+    margin: 0 0 8px 0;
+    color: #facc15;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.82rem;
+}
+
+.booking-hero h1 {
+    margin: 0;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.booking-hero p {
+    margin-top: 10px;
+    color: #d1d5db;
+}
+
+.booking-card {
+    width: min(960px, 100%);
+    margin: 0 auto;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(8, 12, 22, 0.62);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border-radius: 14px;
+    padding: 20px;
+}
+
+.booking-form {
+    display: grid;
+    gap: 14px;
+}
+
+.booking-form label {
+    display: grid;
+    gap: 8px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.booking-form input,
+.booking-form select,
+.booking-form textarea {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(17, 24, 39, 0.8);
+    color: #f8fafc;
+    padding: 10px 12px;
+    font: inherit;
+}
+
+.booking-form textarea {
+    resize: vertical;
+}
+
+.booking-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.booking-actions button,
+.booking-actions a {
+    border: 1px solid rgba(250, 204, 21, 0.5);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #fef9c3;
+    background: rgba(250, 204, 21, 0.12);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.booking-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.booking-feedback {
+    margin-top: 16px;
+    color: #cbd5e1;
+}
+
+.booking-feedback-error {
+    color: #fca5a5;
+}
+
+.booking-feedback-success {
+    color: #86efac;
+}
+
+.booking-results {
+    margin-top: 20px;
+    display: grid;
+    gap: 12px;
+}
+
+.booking-garage-card {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
+    padding: 14px;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.booking-garage-card header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.booking-garage-card h3 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.booking-garage-card p {
+    margin: 6px 0;
+    color: #d1d5db;
+}
+
+.booking-garage-available {
+    border-color: rgba(74, 222, 128, 0.6);
+}
+
+.booking-garage-unavailable {
+    border-color: rgba(248, 113, 113, 0.65);
+}
+
+.booking-status {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.booking-status-ok {
+    color: #dcfce7;
+    background: rgba(22, 163, 74, 0.35);
+    border: 1px solid rgba(74, 222, 128, 0.5);
+}
+
+.booking-status-ko {
+    color: #fee2e2;
+    background: rgba(220, 38, 38, 0.32);
+    border: 1px solid rgba(248, 113, 113, 0.5);
+}
+
+.booking-status-neutral {
+    color: #e2e8f0;
+    background: rgba(71, 85, 105, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.booking-garage-prestations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.booking-garage-prestations span {
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    background: rgba(250, 204, 21, 0.12);
+    color: #fde68a;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 0.76rem;
+}
+
+.booking-card-actions {
+    margin-top: 14px;
+}
+
+.booking-primary-btn {
+    border: 1px solid rgba(74, 222, 128, 0.6);
+    border-radius: 10px;
+    padding: 9px 13px;
+    color: #dcfce7;
+    background: rgba(22, 163, 74, 0.2);
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.booking-primary-btn:hover {
+    background: rgba(22, 163, 74, 0.3);
+}
+
+.booking-primary-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.booking-actions button:hover,
+.booking-actions a:hover {
+    background: rgba(250, 204, 21, 0.2);
+}
+
+@media (max-width: 640px) {
+    .booking-page {
+        padding: 24px 12px;
+    }
+
+    .booking-card {
+        padding: 16px;
+    }
+}

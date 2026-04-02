@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
 import './Inscription.css';
 
 function RegisterForm() {
@@ -123,7 +122,7 @@ function RegisterForm() {
                 tva: tvaCalculée
             }));
             setSiretValid(true);
-        } catch (err) {
+        } catch {
             setMessage("Erreur API");
             setSiretValid(false);
         }

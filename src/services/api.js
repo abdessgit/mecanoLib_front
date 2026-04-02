@@ -1,39 +1,4 @@
-// --- VALIDATION GARAGE ---
-/**
- * Valide ou invalide un garage par son ID
- * @param {string} token - JWT d'authentification
- * @param {number|string} garageId - ID du garage à valider
- * @param {boolean} isValide - true pour valider, false pour invalider
- * @returns {Promise<any>} Résultat de la requête
- */
-export async function validateGarage(token, garageId, isValide = true) {
-    return apiFetch(`/api/v1/garages/${garageId}`, {
-        method: "PATCH",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify({ isValide }),
-    });
-}
-// --- GARAGES ---
-/**
- * Supprime un garage par son ID
- * @param {string} token - JWT d'authentification
- * @param {number|string} garageId - ID du garage à supprimer
- * @returns {Promise<any>} Résultat de la requête
- */
-export async function deleteGarage(token, garageId) {
-    return apiFetch(`/api/v1/garages/${garageId}`, {
-        method: "DELETE",
-        headers: buildAuthHeaders(token),
-    });
-}
-// --- UTILISATEURS (ADMIN) ---
-export async function deleteUser(token, userId) {
-    return apiFetch(`/api/v1/users/${userId}`, {
-        method: "DELETE",
-        headers: buildAuthHeaders(token),
-    });
-}
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/$/, "")
 const AUTH_TOKEN_KEY = "auth_token"
 const AUTH_ROLE_KEY = "auth_role"
 const AUTH_REMEMBER_KEY = "auth_remember"
@@ -60,9 +25,19 @@ async function apiFetch(path, options = {}) {
 
 function buildAuthHeaders(token) {
     return {
-        "Content-Type": "application/json",
+        "Content-Type": "apilication/json",
         Authorization: `Bearer ${token}`,
     }
+}
+
+function buildJsonHeaders(token) {
+    if (!token) {
+        return {
+            "Content-Type": "apilication/json",
+        }
+    }
+
+    return buildAuthHeaders(token)
 }
 
 export function getStoredAuth() {
@@ -99,434 +74,225 @@ export function clearStoredAuth() {
     sessionStorage.removeItem(AUTH_REMEMBER_KEY)
 }
 
-export function isJwtExpired(token) {
-    if (!token) return true
-
-    try {
-        const payloadBase64 = token.split(".")[1]
-        if (!payloadBase64) return true
-
-        const normalized = payloadBase64.replace(/-/g, "+").replace(/_/g, "/")
-        const payload = JSON.parse(atob(normalized))
-        const exp = payload?.exp
-
-        if (!exp) return false
-
-        return Date.now() >= exp * 1000
-    } catch {
-        return true
-    }
-}
-
-
-export function getDefaultDashboardPath(role) {
-    if (role === "superadmin") return "/dashboardSuperAdmin";
-    if (role === "garage") return "/dashboardGarage";
-    return "/dashboardClient";
-}
-
-
-function mapRolesToAppRole(roles) {
-    if (!Array.isArray(roles)) {
-        return "client";
-    }
-    if (roles.includes("ROLE_SUPER_ADMIN")) {
-        return "superadmin";
-    }
-    if (roles.includes("ROLE_ADMIN")) {
-        return "garage";
-    }
-    return "client";
-}
-
-export async function fetchConnectedUser(token) {
-    return apiFetch("/api/v1/users/connecter", {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function loginUser({ email, password, otp = "", remember }) {
-    const body = { email, mdp: password }
-    if (otp) body.code = otp
-
-    const response = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    })
-
-    const data = await safeJson(response)
-
-    if (response.status === 202 && data?.requires2fa) {
-        return { requires2fa: true }
-    }
-
-    if (!response.ok) {
-        if (data?.requires2fa) return { requires2fa: true, error: data?.erreur }
-        throw new Error(data?.erreur || data?.message || "Connexion impossible")
-    }
-
-    const token = data?.token || data?.access_token || data?.jwt
-    if (!token) throw new Error("Token manquant dans la reponse")
-
-    const connected = await fetchConnectedUser(token)
-    const role = mapRolesToAppRole(connected?.roles)
-    setStoredAuth({ token, role, remember })
-
-    return { token, role, profile: connected }
-}
-
-export async function setup2fa(token) {
-    return apiFetch("/api/v1/garages/2fa/setup", {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function verify2fa(token, code) {
-    return apiFetch("/api/v1/garages/2fa/verify", {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify({ code }),
-    })
-}
-
-export async function disable2fa(token, { mdp, code }) {
-    return apiFetch("/api/v1/garages/2fa/disable", {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify({ mdp, code }),
-    })
-}
-
 export async function get2faStatus(token) {
-    return apiFetch("/api/v1/garages/2fa", {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function getProfile(token) {
     return apiFetch("/api/v1/users/connecter", {
         method: "GET",
         headers: buildAuthHeaders(token),
+    }).then((data) => {
+        if (typeof data?.enabled === "boolean") return data
+        return { enabled: Boolean(data?.is2fa) }
     })
 }
 
-export async function registerClient({ nom, prenom, email, mdp, tel, consentement }) {
-    return apiFetch("/api/v1/users/inscrire_client", {
+export async function setup2fa(token, { email } = {}) {
+    return apiFetch("/api/v1/users/activer_2fa", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            nom,
-            prenom,
-            email,
-            mdp,
-            tel,
-            consentement,
-        }),
-    })
-}
-
-export async function registerGarage({ nom_garage, email, telephone, adresse, siret, tva, id_ville, mdp, img_garage = null, img_logo = null }) {
-    return apiFetch("/api/v1/users/inscrire-garage", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            nom_garage,
-            email,
-            telephone,
-            adresse,
-            siret,
-            tva,
-            id_ville,
-            mdp,
-            img_garage,
-            img_logo,
-        }),
-    })
-}
-
-async function tryFirst(paths, optionsBuilder) {
-    let lastError = null
-
-    for (const path of paths) {
-        try {
-            return await apiFetch(path, optionsBuilder(path))
-        } catch (error) {
-            lastError = error
-        }
-    }
-
-    throw lastError || new Error("Aucun endpoint disponible")
-}
-
-function normalizeAppointments(raw) {
-    const list = Array.isArray(raw)
-        ? raw
-        : Array.isArray(raw?.items)
-          ? raw.items
-          : Array.isArray(raw?.data)
-            ? raw.data
-            : []
-
-    return list.map((item, index) => {
-        const garage = item?.garage?.nom_garage || item?.garage_name || item?.garage || "Garage"
-        const service = item?.service || item?.prestation || item?.title || "Intervention"
-        const dateRaw = item?.date || item?.date_rdv || item?.appointment_date || item?.created_at || ""
-        const status = item?.status || item?.etat || "En attente"
-
-        let date = "Date non precisee"
-        if (dateRaw) {
-            const parsed = new Date(dateRaw)
-            date = Number.isNaN(parsed.getTime()) ? String(dateRaw) : parsed.toLocaleString("fr-FR")
-        }
-
-        return {
-            id: item?.id || index + 1,
-            garage,
-            service,
-            date,
-            status,
-        }
-    })
-}
-
-function normalizeStats(rawStats, appointments) {
-    const source = rawStats?.data || rawStats || {}
-    const pendingFromAppointments = appointments.filter((item) => String(item.status).toLowerCase().includes("attente")).length
-
-    return [
-        {
-            label: "Rendez-vous a venir",
-            value: source.upcoming_appointments ?? source.rendez_vous_a_venir ?? appointments.length,
-            icon: "📅",
-        },
-        {
-            label: "Demandes en attente",
-            value: source.pending_requests ?? source.demandes_en_attente ?? pendingFromAppointments,
-            icon: "⏳",
-        },
-        {
-            label: "Interventions terminees",
-            value: source.completed_services ?? source.interventions_terminees ?? 0,
-            icon: "✅",
-        },
-        {
-            label: "Garages favoris",
-            value: source.favorite_garages ?? source.garages_favoris ?? 0,
-            icon: "⭐",
-        },
-    ]
-}
-
-export async function getClientDashboard(token) {
-    const authOptions = {
-        method: "GET",
         headers: buildAuthHeaders(token),
-    }
-
-    // Récupère le profil utilisateur connecté
-    const profileResult = await tryFirst(["/api/v1/users/connecter"], () => authOptions)
-
-    // Récupère les rendez-vous du client (à adapter si besoin)
-    // Ici, il faut probablement l'id du client, à récupérer dans le profil
-    const clientId = profileResult?.id || profileResult?.data?.id || profileResult?.clientId || profileResult?.data?.clientId
-    let appointmentsResult = []
-    if (clientId) {
-        appointmentsResult = await apiFetch(`/api/v1/client/vehicules/${clientId}`, authOptions)
-    }
-
-    // Pas de route stats dédiée, on laisse vide ou à adapter selon besoin
-    const statsResult = {}
-
-    const appointments = normalizeAppointments(appointmentsResult)
-    const stats = normalizeStats(statsResult, appointments)
-
-    const firstName = profileResult?.prenom || profileResult?.first_name || profileResult?.data?.prenom || ""
-    const lastName = profileResult?.nom || profileResult?.last_name || profileResult?.data?.nom || ""
-    const fullName = `${firstName} ${lastName}`.trim() || "Client"
-
-    return {
-        fullName,
-        stats,
-        appointments,
-    }
+        body: JSON.stringify({ email }),
+    })
 }
 
-// --- RENDEZ-VOUS ---
-export async function getClientRendezVous(token, clientId) {
-    return apiFetch(`/api/v1/client/rdvs?clientId=${clientId}`, {
+export async function verify2fa(token, code, { email } = {}) {
+    return apiFetch("/api/v1/users/verify_2fa", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ email, code }),
+    })
+}
+
+export async function disable2fa(token, { email } = {}) {
+    return apiFetch("/api/v1/users/desactiver_2fa", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ email }),
+    })
+}
+
+export async function getGarageProfile(token, { userId } = {}) {
+    const suffix = userId ? `?userId=${encodeURIComponent(userId)}` : ""
+    return apiFetch(`/api/v1/profil${suffix}`, {
         method: "GET",
         headers: buildAuthHeaders(token),
     })
 }
 
-export async function getGarageRendezVous(token, garageId) {
-    return apiFetch(`/api/v1/garage/${garageId}/rdvs`, {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function createRendezVous(token, data) {
-    return apiFetch("/api/v1/creer_rdv", {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify(data),
-    })
-}
-
-export async function updateRendezVous(token, data) {
-    return apiFetch("/api/v1/modifier_rdv", {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify(data),
-    })
-}
-
-export async function deleteRendezVous(token, id) {
-    return apiFetch(`/api/v1/rdv/${id}`, {
-        method: "DELETE",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-// --- PRESTATIONS ---
-export async function getPrestations(token) {
-    return apiFetch("/api/v1/get_prestations", {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function getPrestationsByGarage(token, garageId) {
-    return apiFetch(`/api/v1/get_prestations_by_garage/${garageId}`, {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function addPrestationsGarage(token, garageId, prestations) {
-    return apiFetch(`/api/v1/garage/${garageId}/add_prestations`, {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify({ prestations }),
-    })
-}
-
-export async function deletePrestationGarage(token, garageId, prestationId) {
-    return apiFetch(`/api/v1/garage/${garageId}/delete_prestation/${prestationId}`, {
-        method: "DELETE",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-// --- AVIS ---
-export async function getAvis(token, { garageId, clientId } = {}) {
-    let url = "/api/v1/avis"
-    const params = []
-    if (garageId) params.push(`garageId=${garageId}`)
-    if (clientId) params.push(`clientId=${clientId}`)
-    if (params.length) url += `?${params.join("&")}`
-    return apiFetch(url, {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function createAvis(token, data) {
-    return apiFetch("/api/v1/avis", {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify(data),
-    })
-}
-
-export async function updateAvis(token, id, data) {
-    return apiFetch(`/api/v1/avis/${id}`, {
-        method: "PUT",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify(data),
-    })
-}
-
-export async function deleteAvis(token, id) {
-    return apiFetch(`/api/v1/avis/${id}`, {
-        method: "DELETE",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-// --- HISTORIQUES ---
-export async function getHistoriques(token, rdvId) {
-    let url = "/api/v1/historiques"
-    if (rdvId) url += `?rdvId=${rdvId}`
-    return apiFetch(url, {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function createHistorique(token, data) {
-    return apiFetch("/api/v1/historiques", {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify(data),
-    })
-}
-
-// --- VEHICULES ---
-export async function getVehiculesClient(token, clientId) {
-    return apiFetch(`/api/v1/client/vehicules/${clientId}`, {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-    })
-}
-
-export async function addVehicule(token, data) {
-    return apiFetch("/api/v1/client/add_vehicule", {
-        method: "POST",
-        headers: buildAuthHeaders(token),
-        body: JSON.stringify(data),
-    })
-}
-
-export async function updateVehicule(token, id, data) {
-    return apiFetch(`/api/v1/client/update_vehicule/${id}`, {
+export async function updateGarageProfile(token, data) {
+    return apiFetch("/api/v1/profil", {
         method: "PATCH",
         headers: buildAuthHeaders(token),
         body: JSON.stringify(data),
     })
 }
 
-export async function deleteVehicule(token, id) {
-    return apiFetch(`/api/v1/client/delete_vehicule/${id}`, {
+export async function deleteGarageProfile(token, data = {}) {
+    return apiFetch("/api/v1/profil", {
         method: "DELETE",
         headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
     })
 }
 
-// --- NOTIFICATIONS ---
-export async function sendNotification(token, data) {
-    return apiFetch("/api/v1/status_notif/send", {
+export async function updateGarageHoraires(token, data) {
+    return apiFetch("/api/v1/horaires/ouvertures-fermetures", {
+        method: "PATCH",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function updateGaragePlanningSemaine(token, data) {
+    return apiFetch("/api/v1/planning/semaine", {
+        method: "PATCH",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function getGaragePlanningSemaine(token, { garageId, userId } = {}) {
+    const params = new URLSearchParams()
+    if (garageId) params.set("garageId", garageId)
+    if (userId) params.set("userId", userId)
+    const suffix = params.toString() ? `?${params.toString()}` : ""
+
+    return apiFetch(`/api/v1/planning/semaine${suffix}`, {
+        method: "GET",
+        headers: buildJsonHeaders(token),
+    })
+}
+
+export async function searchGarages({ ville, prestationId, onlyValidated } = {}) {
+    const params = new URLSearchParams()
+    if (ville) params.set("ville", ville)
+    if (prestationId) params.set("prestationId", prestationId)
+    if (typeof onlyValidated === "boolean") params.set("onlyValidated", String(onlyValidated))
+    const suffix = params.toString() ? `?${params.toString()}` : ""
+
+    return apiFetch(`/api/v1/garages/search${suffix}`, {
+        method: "GET",
+    })
+}
+
+export async function getPrestationsCatalogue() {
+    return apiFetch("/api/v1/prestations/catalogue", {
+        method: "GET",
+    })
+}
+
+export async function getClientVehiculesMe(token) {
+    return apiFetch("/api/v1/client/vehicules/me", {
+        method: "GET",
+        headers: buildJsonHeaders(token),
+    })
+}
+
+export async function createClientRdv(token, data) {
+    return apiFetch("/api/v1/creer_rdv", {
+        method: "POST",
+        headers: buildJsonHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function addGaragePrestation(token, data) {
+    return apiFetch("/api/v1/prestations", {
         method: "POST",
         headers: buildAuthHeaders(token),
         body: JSON.stringify(data),
     })
 }
 
-export async function verifyOtpNotif(token, data) {
-    return apiFetch("/api/v1/status_notif/verify-otp", {
+export async function deleteGaragePrestation(token, prestationId, data = {}) {
+    return apiFetch(`/api/v1/prestations/${prestationId}`, {
+        method: "DELETE",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function getGarageRdvList(token, garageId, { userId } = {}) {
+    const params = new URLSearchParams()
+    if (garageId) params.set("garageId", garageId)
+    if (userId) params.set("userId", userId)
+    const suffix = params.toString() ? `?${params.toString()}` : ""
+    return apiFetch(`/api/v1/rdv${suffix}`, {
+        method: "GET",
+        headers: buildJsonHeaders(token),
+    })
+}
+
+export async function getGarageRdvDetail(token, rdvId) {
+    return apiFetch(`/api/v1/rdv/${rdvId}`, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function getGarageRdvPrestations(token, rdvId) {
+    return apiFetch(`/api/v1/rdv/${rdvId}/prestations`, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function updateGarageRdvStatus(token, rdvId, data) {
+    return apiFetch(`/api/v1/rdv/${rdvId}/gestion`, {
+        method: "PATCH",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function addGarageRdvHistorique(token, rdvId, data) {
+    return apiFetch(`/api/v1/rdv/${rdvId}/historique`, {
         method: "POST",
         headers: buildAuthHeaders(token),
         body: JSON.stringify(data),
     })
+}
+
+export async function createGarageRdv(token, data) {
+    return apiFetch("/api/v1/rdv", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export async function changePassword(token, data) {
+    return apiFetch("/api/v1/users/change-password", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(data),
+    })
+}
+
+export default {
+    getStoredAuth,
+    setStoredAuth,
+    clearStoredAuth,
+    get2faStatus,
+    setup2fa,
+    verify2fa,
+    disable2fa,
+    getGarageProfile,
+    updateGarageProfile,
+    deleteGarageProfile,
+    updateGarageHoraires,
+    updateGaragePlanningSemaine,
+    getGaragePlanningSemaine,
+    searchGarages,
+    getPrestationsCatalogue,
+    getClientVehiculesMe,
+    createClientRdv,
+    addGaragePrestation,
+    deleteGaragePrestation,
+    getGarageRdvList,
+    getGarageRdvDetail,
+    getGarageRdvPrestations,
+    updateGarageRdvStatus,
+    addGarageRdvHistorique,
+    createGarageRdv,
+    changePassword,
 }
 
 export { API_BASE_URL }

@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { AuthConnexion } from '../../connexion/AuthConnexion.jsx';
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./DashboardClient.css";
 
 export default function DashboardClient() {
@@ -25,7 +25,7 @@ export default function DashboardClient() {
                             <h1>Bonjour John</h1>
                             <p>Votre compte est actif. Vous pouvez suivre vos informations et vos rendez-vous depuis cet espace.</p>
                         </div>
-                        <button className="client-dashboard-logout">
+                        <button className="client-dashboard-logout" onClick={handleLogout}>
                             Deconnexion
                         </button>
                     </div>
@@ -66,9 +66,9 @@ export default function DashboardClient() {
                                 <h2>Mes rendez-vous</h2>
                                 <p>3 rendez-vous associés à votre email.</p>
                             </div>
-                            <a href="/booking" className="client-dashboard-book-link">
+                            <Link to="/booking" className="client-dashboard-book-link">
                                 Prendre un rendez-vous
-                            </a>
+                            </Link>
                         </div>
 
                         {/* Prochain rendez-vous */}
