@@ -28,7 +28,7 @@ export default function CardGarage({
                     <div
                         key={g.id_garage}
                         className="garage-item"
-                        onClick={() => onSelectGarage(g)} // 🔹 click pour planning
+                        onClick={() => onSelectGarage(g)} //  pour passer au planning
                         style={{ cursor: "pointer" }}
                     >
                         {g.nom_garage} — {g.adresse_garage}

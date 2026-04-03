@@ -29,7 +29,7 @@ export default function DashboardClient() {
     const [code2FA, setCode2FA] = useState("");
     const [messageActivation, setMessageActivation] = useState("");
     const [messageValidation, setMessageValidation] = useState("");
-    const [notification, setNotification] = useState(""); // pour messages modernes
+    const [notification, setNotification] = useState(""); // pour messages 
 
     // --- Vérifier 2FA à la connexion ---
     useEffect(() => {
@@ -116,6 +116,26 @@ export default function DashboardClient() {
         }
     };
 
+    // recharger tout les vehvule 
+    const fetchVehicules = async (clientIdParam) => {
+        const id = clientIdParam || client?.clientId;
+        if (!id) return;
+
+        try {
+            const resVehicules = await fetch(
+                `http://127.0.0.1:8000/api/v1/client/vehicules/${id}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (!resVehicules.ok) throw new Error(await resVehicules.text());
+
+            const vehiculesData = await resVehicules.json();
+            setVehicules(vehiculesData); //  rerender automatique
+
+        } catch (err) {
+            console.error("Erreur véhicules:", err);
+        }
+    };
 
     // --- Récupérer client + véhicules ---
     useEffect(() => {
@@ -173,15 +193,31 @@ export default function DashboardClient() {
         try {
             const res = await fetch('http://127.0.0.1:8000/api/v1/client/add_vehicule', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ ...newVehicule, id_client: client.clientId })
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    ...newVehicule,
+                    id_client: client.clientId
+                })
             });
+
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            setVehicules(prev => [...prev, data.vehicule]); // utiliser l'objet renvoyé avec ID
-            setNewVehicule({ immatriculation: "", annee: "", id_marque: "", id_modele: "" });
-            setNotification("Véhicule ajouté avec succès ");
+            // 👉 on recharge la vraie liste depuis la BDD
+            await fetchVehicules(client.clientId);
+
+            setNewVehicule({
+                immatriculation: "",
+                annee: "",
+                id_marque: "",
+                id_modele: ""
+            });
+
+            setNotification("Véhicule ajouté avec succès");
+
         } catch (err) {
             setNotification("Erreur: " + err.message);
         }
@@ -232,14 +268,15 @@ export default function DashboardClient() {
                 });
 
                 const text = await res.text();
-
-                if (!res.ok) {
-                    console.error("Erreur serveur RDV :", text);
-                    throw new Error("Erreur serveur lors du chargement des RDV");
-                }
-
+                if (!res.ok) throw new Error(text);
                 const data = JSON.parse(text);
+
                 setRdvs(data);
+
+                //  Pour chaque RDV, récupérer son statut via l'endpoint dédié
+                data.forEach(rdv => {
+                    fetchStatusRdv(rdv.id_rdv);
+                });
 
             } catch (err) {
                 console.error("Erreur RDV:", err.message);
@@ -256,19 +293,40 @@ export default function DashboardClient() {
         const stored = localStorage.getItem("reservationData");
         if (stored) {
             const data = JSON.parse(stored);
-            // On transforme le créneau pour ajouter date_fin (ici +2h par exemple)
+
             const dateDebut = data.date_debut;
             const dateFin = data.date_fin;
 
             setReservationData({
                 id_garage: data.id_garage,
+                nom_garage: data.nom_garage,
                 id_prestation: data.id_prestation,
-                id_vehicule: data.id_vehicule || "", // sera choisi après
+                id_vehicule: data.id_vehicule || "",
                 date_debut: dateDebut,
                 date_fin: dateFin
             });
         }
     }, []);
+
+    // --- Récupérer le statut d'un RDV par son id ---
+    const fetchStatusRdv = async (rdvId) => {
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/v1/rdv/${rdvId}/status`, {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: "no-store"
+            });
+
+            if (!res.ok) throw new Error("Impossible de récupérer le statut du RDV");
+
+            const data = await res.json();
+            // Mettre à jour le RDV correspondant dans la liste
+            setRdvs(prev => prev.map(r => r.id_rdv === rdvId ? { ...r, status: data.status } : r));
+        } catch (err) {
+            console.error("Erreur :", err.message);
+        }
+    };
+
+
     if (!client) return <p>Chargement...</p>;
 
     return (
@@ -281,27 +339,39 @@ export default function DashboardClient() {
 
             {/* 2FA */}
             {!is2FARequired && <div className="status success">Vous êtes connecté</div>}
-            <div className="security-section">
-                <h2>Sécurité du compte</h2>
-                <div className="btn-group">
-                    <button className="btn primary" onClick={activer2FA} disabled={is2FAActivated}>
-                        {is2FAActivated ? "2FA déjà activée" : "Activer 2FA"}
-                    </button>
-                    <button className="btn danger" onClick={desactiver2FA} disabled={!is2FAActivated}>
-                        Désactiver 2FA
-                    </button>
-                </div>
-                {messageActivation && <p className="info">{messageActivation}</p>}
-                {is2FARequired && (
-                    <form onSubmit={handle2FASubmit} className="twofa-form">
-                        <input type="text" placeholder="Entrez le code 2FA" value={code2FA}
-                            onChange={e => setCode2FA(e.target.value)} required />
-                        <button className="btn primary" type="submit">Valider 2FA</button>
-                    </form>
-                )}
-                {messageValidation && <p className="success">{messageValidation}</p>}
-            </div>
+            <div className="display-flex">
 
+                <div className="status success blink">
+                    <ConfirmRdvForm
+                        reservationData={reservationData}
+                        vehicules={vehicules}
+                        token={token}
+                        onRdvConfirme={(data) => setRdvs(prev => [...prev, data])}
+                    />
+                </div>
+
+                <div className="security-section">
+
+                    <h2>Sécurité du compte</h2>
+                    <div className="btn-group">
+                        <button className="btn primary" onClick={activer2FA} disabled={is2FAActivated}>
+                            {is2FAActivated ? "2FA déjà activée" : "Activer 2FA"}
+                        </button>
+                        <button className="btn danger" onClick={desactiver2FA} disabled={!is2FAActivated}>
+                            Désactiver 2FA
+                        </button>
+                    </div>
+                    {messageActivation && <p className="info">{messageActivation}</p>}
+                    {is2FARequired && (
+                        <form onSubmit={handle2FASubmit} className="twofa-form">
+                            <input type="text" placeholder="Entrez le code 2FA" value={code2FA}
+                                onChange={e => setCode2FA(e.target.value)} required />
+                            <button className="btn primary" type="submit">Valider 2FA</button>
+                        </form>
+                    )}
+                    {messageValidation && <p className="success">{messageValidation}</p>}
+                </div>
+            </div>
             {/* Véhicules */}
             <div className="client-dashboard-vehicules">
                 <h2>Mes véhicules</h2>
@@ -360,12 +430,7 @@ export default function DashboardClient() {
                 </select>
                 <button onClick={handleAddVehicule}>Ajouter</button>
             </div>
-            <ConfirmRdvForm
-                reservationData={reservationData}
-                vehicules={vehicules}
-                token={token}
-                onRdvConfirme={(data) => setRdvs(prev => [...prev, data])}
-            />
+
         </div>
     );
 }

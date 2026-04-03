@@ -77,16 +77,16 @@ export default function Footer() {
 
                     <div className="footer-contact">
                         <h3>Contact</h3>
-                        <p> contact@mecanolib.fr</p>
-                        <p> 01 23 45 67 89</p>
-                        <p> Paris, France</p>
+                        <p>mecanolibcontact@gmail.com</p>
+                        <p>01 23 45 67 89</p>
+                        <p>Lille, France</p>
                     </div>
 
                 </div>
 
                 <div className="footer-bottom">
                     <p>© {year} MecanoLib - Tous droits réservés</p>
-                    <p>Fait avec </p>
+                    <p>Fait Par</p>
                 </div>
 
             </div>

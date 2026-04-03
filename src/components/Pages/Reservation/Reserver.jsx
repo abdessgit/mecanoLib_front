@@ -21,11 +21,11 @@ export default function BookingPage() {
     const [selectedPrestation, setSelectedPrestation] = useState(null);
     const [selectedGarage, setSelectedGarage] = useState(null);
     const [villeId, setVilleId] = useState("");
-    const [selectedPlanning, setSelectedPlanning] = useState([]);
+
     // afficher les rechargement pour UI 
     const [loadingPrestations, setLoadingPrestations] = useState(false);
     const [loadingGarages, setLoadingGarages] = useState(false);
-    const [loadingPlanning, setLoadingPlanning] = useState(false);
+
     // button de navigation
 
     const prevStep = () => setStep(prev => prev - 1);
@@ -92,31 +92,11 @@ export default function BookingPage() {
     };
     // ...
     const handleSelectGarage = (garage) => {
-        setSelectedGarage(garage); // ✅ sauvegarde le garage
-        setStep(4);                // passe à l'étape Planning
+        setSelectedGarage(garage);
+        setStep(4);
         setMessage("");
     };
-    /*const handleSelectGarage = async (garage) => {
-        setSelectedGarage(garage); // sauvegarde le garage sélectionné
-        setStep(4);
-        setLoadingPlanning(true);
-        setMessage("");
 
-        try {
-
-            const data = await getPlanningByGarage(garage.id_garage);
-            setPlanning(data.planning || []);
-            if ((data.planning || []).length === 0) {
-                setMessage("Aucun créneau disponible pour ce garage.");
-            }
-        } catch (e) {
-            console.error(e);
-            setPlanning([]);
-            setMessage("Impossible de charger le planning pour ce garage.");
-        } finally {
-            setLoadingPlanning(false);
-        }
-    };*/
     const handleSelectPlanning = (planning) => {
         setSelectedPrestation(planning);
         setStep(4);
@@ -150,17 +130,27 @@ export default function BookingPage() {
             return alert("Veuillez sélectionner tous les éléments avant de continuer !");
         }
 
+        const dateDebut = `${creneau.date} ${creneau.heure}:00`;
+        const dateFin = new Date(
+            new Date(dateDebut).getTime() + 1 * 60 * 60 * 1000
+        ).toISOString().slice(0, 19).replace("T", " ");
+
         const reservationData = {
             id_categorie: selectedCategorie.id,
-            id_prestation: selectedPrestation.id,  // ✅ idPrestation correct
-            id_garage: selectedGarage.id_garage,   // ✅ idGarage correct
-            date_debut: `${creneau.date} ${creneau.heure}:00`,
-            date_fin: new Date(new Date(`${creneau.date} ${creneau.heure}:00`).getTime() + 1 * 60 * 60 * 1000)
-                .toISOString().slice(0, 19).replace("T", "")
+            nom_categorie: selectedCategorie.nom || selectedCategorie.nom_categorie,
+
+            id_prestation: selectedPrestation.id,
+            nom_prestation: selectedPrestation.nom || selectedPrestation.nom_prestation,
+
+            id_garage: selectedGarage.id_garage,
+            nom_garage: selectedGarage.nom_garage || selectedGarage.nom,
+
+            date_debut: dateDebut,
+            date_fin: dateFin
         };
 
         localStorage.setItem("reservationData", JSON.stringify(reservationData));
-        navigate("/auth"); // redirection
+        navigate("/auth");
     };
     return (
         <div className="rdv-container">

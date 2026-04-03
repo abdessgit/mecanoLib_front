@@ -111,7 +111,7 @@ body {
   display: flex;
   justify-content: space-around;
   padding: 60px;
-
+  color: white;
   text-align: center;
 }
 
@@ -124,6 +124,7 @@ body {
 .features {
   padding: 80px 40px;
   text-align: center;
+  color: white;
 }
 
 .features-grid {
@@ -164,6 +165,10 @@ body {
 .cta {
   padding: 80px;
   text-align: center;
+}
+.cta h2 {
+  padding: 10px;
+  color: white;
 }
 
 .big {

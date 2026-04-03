@@ -1,0 +1,9 @@
+.rdv-message {
+  margin: 15px 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #e6f7ee;
+  color: #1e7e34;
+  font-weight: bold;
+  text-align: center;
+}
