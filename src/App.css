@@ -4,6 +4,24 @@
   flex-direction: column;
 }
 
+.app-return-site {
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem 1.5rem;
+}
+
+.app-return-site-link {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.app-return-site-link:hover {
+  color: #1d4ed8;
+}
+
 /* Page transitions */
 .page-transition-enter {
   opacity: 0;

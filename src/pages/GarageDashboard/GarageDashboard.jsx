@@ -1,12 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Calendar, 
-  Users, 
-  Wrench, 
-  TrendingUp, 
-  LogOut, 
-  Search, 
+import {
+  Calendar,
+  Users,
+  Wrench,
+  TrendingUp,
+  LogOut,
+  Search,
   Filter,
   CheckCircle,
   XCircle,
@@ -17,80 +17,798 @@ import {
   Bell,
   Settings,
   BarChart3,
-  Plus
+  Plus,
+  History
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { 
-  Button, 
-  Input, 
-  Card, 
-  CardContent, 
-  StatusBadge, 
-  Modal 
+import {
+  Button,
+  Input,
+  Card,
+  CardContent,
+  StatusBadge,
+  Modal
 } from '../../components';
 import { useApp } from '../../context/AppContext';
-import { services, garageStats } from '../../data/mockData';
+import { services } from '../../data/mockData';
+import {
+  changeRendezVousStatus,
+  changeGaragePassword,
+  clearStoredAuth,
+  getAssociations,
+  getFrenchAddressSuggestions,
+  getFrenchCitySuggestions,
+  getGarageProfile,
+  getGarageRendezVous,
+  getHistoriques,
+  getHorairesByGarage,
+  getJours,
+  getStatusRendezVous,
+  getStoredAuth,
+  getVilles,
+  isJwtExpired,
+  isValidEmailFormat,
+  upsertGarageHoraire,
+  updateGaragePlanning,
+  updateGarageProfile,
+} from '../../services/api';
 import './GarageDashboard.css';
 
+import { PrestationsManager } from '../../components';
+
+const FALLBACK_DAYS = [
+  { jourId: '1', libJour: 'Lundi' },
+  { jourId: '2', libJour: 'Mardi' },
+  { jourId: '3', libJour: 'Mercredi' },
+  { jourId: '4', libJour: 'Jeudi' },
+  { jourId: '5', libJour: 'Vendredi' },
+  { jourId: '6', libJour: 'Samedi' },
+  { jourId: '7', libJour: 'Dimanche' },
+];
+
+const buildDefaultWeekSchedule = (days = FALLBACK_DAYS) =>
+  days.map((jour) => ({
+    jourId: String(jour?.jourId ?? ''),
+    libJour: jour?.libJour || 'Jour',
+    horaireId: '',
+    hasAssociation: false,
+    mode: 'closed',
+    hreOuvreMatin: '08:00',
+    hreFermeMatin: '12:00',
+    hreOuvreSoir: '14:00',
+    hreFermeSoir: '18:00',
+  }));
+
+const normalizeDayLabel = (value = '') => value.toString().trim().toLowerCase();
+
+const DEFAULT_STATUS_MAP = {
+  reserved: 1,
+  pending: 1,
+  confirmed: 2,
+  completed: 3,
+  refused: 4,
+  cancelled_client: 5,
+  cancelled_garage: 5,
+};
+
+// Helper pour obtenir la date locale au format YYYY-MM-DD (évite les problèmes de timezone UTC)
+const toLocalISODate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper pour obtenir l'heure locale au format HH:MM
+const toLocalTime = (date) => {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+const mapStatusIdToKey = (statusId, label = '') => {
+  const normalizedLabel = String(label || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  // Détection par label (plus précise)
+  if (normalizedLabel.includes('confirm')) return 'confirmed';
+  if (normalizedLabel.includes('term')) return 'completed';
+  if (normalizedLabel.includes('refus')) return 'refused';
+  if (normalizedLabel.includes('annul')) {
+    // Distinction entre annulation client et garage
+    if (normalizedLabel.includes('client')) return 'cancelled_client';
+    return 'cancelled_garage';
+  }
+  if (normalizedLabel.includes('attente')) return 'pending';
+
+  // Fallback par ID
+  switch (Number(statusId)) {
+    case 1:
+      return 'pending';
+    case 2:
+      return 'confirmed';
+    case 3:
+      return 'completed';
+    case 4:
+      return 'refused';
+    case 5:
+      return 'cancelled_client';
+    case 6:
+      return 'cancelled_garage';
+    default:
+      return 'pending';
+  }
+};
+
+const toMinutes = (time) => {
+  const [hours, minutes] = String(time || '00:00').split(':').map(Number);
+  return (hours * 60) + minutes;
+};
+
+const fromMinutes = (minutes) => {
+  const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
+  const mins = String(minutes % 60).padStart(2, '0');
+  return `${hours}:${mins}`;
+};
+
+const buildSlotsBetween = (start, end) => {
+  const startMin = toMinutes(start);
+  const endMin = toMinutes(end);
+  if (endMin <= startMin) return [];
+
+  const slots = [];
+  for (let t = startMin; t + 30 <= endMin; t += 30) {
+    slots.push(fromMinutes(t));
+  }
+  return slots;
+};
+
+const getWeekStart = (date) => {
+  const current = new Date(date);
+  const dayIndex = current.getDay();
+  const diff = dayIndex === 0 ? -6 : 1 - dayIndex;
+  current.setDate(current.getDate() + diff);
+  current.setHours(0, 0, 0, 0);
+  return current;
+};
+
+const normalizeHorairePayload = (payload) => {
+  const source = payload?.horaire || payload || {};
+  const horaireSource = source?.horaire || source;
+  const id =
+    horaireSource?.id_horaire ??
+    horaireSource?.idHoraire ??
+    source?.id_horaire ??
+    source?.idHoraire ??
+    source?.id ??
+    '';
+
+  return {
+    id: id ? String(id) : '',
+    hreOuvreMatin: horaireSource?.hre_ouvre_matin || horaireSource?.hreOuvreMatin || '08:00',
+    hreFermeMatin: horaireSource?.hre_ferme_matin || horaireSource?.hreFermeMatin || '12:00',
+    hreOuvreSoir: horaireSource?.hre_ouvre_soir || horaireSource?.hreOuvreSoir || '14:00',
+    hreFermeSoir: horaireSource?.hre_ferme_soir || horaireSource?.hreFermeSoir || '18:00',
+  };
+};
+
 const GarageDashboard = () => {
+
   const navigate = useNavigate();
   const { appointments, garageAuth, logoutGarage, updateAppointmentStatus } = useApp();
+  const { token, role, garageId: storedGarageId, profile: storedProfile } = getStoredAuth();
+  const isAuthenticated = Boolean(token) && !isJwtExpired(token) && role === 'garage';
+  const storedGarageName = storedProfile?.garage?.nomGarage
+    || storedProfile?.garage?.nom_garage
+    || storedProfile?.nomGarage
+    || storedProfile?.nom_garage
+    || garageAuth.user?.name
+    || 'Garage';
+  const storedGarageEmail = storedProfile?.garage?.emailGarage
+    || storedProfile?.garage?.email_garage
+    || storedProfile?.emailGarage
+    || storedProfile?.email_garage
+    || storedProfile?.email
+    || storedProfile?.emailUtilisateur
+    || garageAuth.user?.email
+    || '';
+  const storedUserId = storedProfile?.idUtilisateur
+    || storedProfile?.id_utilisateur
+    || storedProfile?.userId
+    || storedProfile?.idUser
+    || storedProfile?.utilisateur?.idUtilisateur
+    || storedProfile?.utilisateur?.id_utilisateur
+    || storedProfile?.utilisateur?.id
+    || storedProfile?.user?.id
+    || '';
   
   const [activeTab, setActiveTab] = useState('appointments');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [highlightedAppointmentId, setHighlightedAppointmentId] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState('');
+  const [settingsError, setSettingsError] = useState('');
+  const [connectedGarageName, setConnectedGarageName] = useState(storedGarageName);
+  const [garageId, setGarageId] = useState(storedGarageId || '');
+  const [garageForm, setGarageForm] = useState({
+    nomGarage: '',
+    emailGarage: '',
+    telephoneGarage: '',
+    adresseGarage: '',
+    ville: '',
+    postalCode: '',
+    id_ville: '',
+    code_insee: '',
+  });
+  const [villes, setVilles] = useState([]);
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [cityLoading, setCityLoading] = useState(false);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [weekSchedule, setWeekSchedule] = useState(buildDefaultWeekSchedule());
+  const [initialWeekSchedule, setInitialWeekSchedule] = useState(buildDefaultWeekSchedule());
+  
+  // Historique states
+  const [historiques, setHistoriques] = useState([]);
+  const [historiquesLoading, setHistoriquesLoading] = useState(false);
+  const [historiquesError, setHistoriquesError] = useState('');
+  const [remoteAppointments, setRemoteAppointments] = useState([]);
+  const [statusMap, setStatusMap] = useState(DEFAULT_STATUS_MAP);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
-  // Si pas connecté, rediriger vers login
-  if (!garageAuth.isAuthenticated) {
-    navigate('/garage');
-    return null;
-  }
+  const normalizeText = useCallback((value = '') => value
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase(), []);
+
+  const findMatchingVilleId = useCallback(({ cityName, postcode, codeInsee }) => {
+    const matchedVille = villes.find((ville) => {
+      const sameName = normalizeText(ville?.nom_ville) === normalizeText(cityName);
+      const samePostcode = String(ville?.code_postal || '') === String(postcode || '');
+      const sameInsee = String(ville?.code_insee || ville?.code_inssee || '') === String(codeInsee || '');
+      return sameInsee || (sameName && samePostcode) || sameName;
+    });
+
+    return matchedVille?.id_ville ? String(matchedVille.id_ville) : '';
+  }, [normalizeText, villes]);
+
+  const getLocalCitySuggestions = useCallback((value) => {
+    const query = normalizeText(value);
+    if (!query) return [];
+
+    return villes
+      .filter((ville) => normalizeText(ville?.nom_ville).startsWith(query))
+      .slice(0, 6)
+      .map((ville) => ({
+        city: ville?.nom_ville || '',
+        postcode: ville?.code_postal || '',
+        codeInsee: ville?.code_insee || ville?.code_inssee || '',
+        label: `${ville?.nom_ville || ''} ${ville?.code_postal || ''}`.trim(),
+      }));
+  }, [normalizeText, villes]);
+
+  useEffect(() => {
+    const loadVilles = async () => {
+      try {
+        const villeData = await getVilles();
+        if (Array.isArray(villeData)) {
+          setVilles(villeData);
+        }
+      } catch {
+        // L'autocompletion officielle reste disponible meme si la liste locale echoue.
+      }
+    };
+
+    loadVilles();
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      clearStoredAuth();
+      navigate('/garage');
+    }
+  }, [isAuthenticated, navigate]);
+
+  const normalizeGaragePayload = useCallback((payload) => {
+    const source = payload?.garage || payload?.data?.garage || payload || {};
+    const id = source?.idGarage ?? source?.id_garage ?? source?.id ?? storedGarageId ?? '';
+    const villeObject = typeof source?.ville === 'object' && source?.ville !== null ? source.ville : {};
+    const villeName = typeof source?.ville === 'string'
+      ? source.ville
+      : source?.nom_ville || source?.villeGarage || source?.ville_garage || villeObject?.nom_ville || villeObject?.nomVille || '';
+
+    return {
+      id: id ? String(id) : '',
+      nomGarage: source?.nomGarage || source?.nom_garage || source?.nom || storedGarageName || '',
+      emailGarage: source?.emailGarage || source?.email_garage || source?.email || storedGarageEmail || '',
+      telephoneGarage: source?.telephoneGarage || source?.telephone_garage || source?.telephone || '',
+      adresseGarage: source?.adresseGarage || source?.adresse_garage || source?.adresse || '',
+      ville: villeName,
+      postalCode: source?.cp || source?.code_postal || source?.codePostal || villeObject?.code_postal || villeObject?.cp || '',
+      id_ville: String(source?.id_ville || source?.idVille || source?.villeId || villeObject?.id_ville || ''),
+      code_insee: source?.code_insee || source?.codeInsee || villeObject?.code_insee || villeObject?.code_inssee || '',
+    };
+  }, [storedGarageEmail, storedGarageId, storedGarageName]);
+
+  useEffect(() => {
+    const loadConnectedGarageName = async () => {
+      if (!token || !isAuthenticated) return;
+      try {
+        const profile = await getGarageProfile(token, storedGarageId || garageId || undefined);
+        const normalized = normalizeGaragePayload(profile);
+        if (normalized.nomGarage) {
+          setConnectedGarageName(normalized.nomGarage);
+        }
+        if (normalized.id) {
+          setGarageId(normalized.id);
+        }
+      } catch {
+        // Garder le nom deja disponible localement si l'API echoue.
+      }
+    };
+
+    loadConnectedGarageName();
+  }, [token, isAuthenticated, storedGarageId, garageId, normalizeGaragePayload]);
+
+  const loadGarageSettings = useCallback(async () => {
+    if (!token) return;
+    setSettingsLoading(true);
+    setSettingsError('');
+
+    try {
+      const profile = await getGarageProfile(token, storedGarageId || garageId || undefined);
+      const normalizedGarage = normalizeGaragePayload(profile);
+
+      setGarageId(normalizedGarage.id || storedGarageId || '');
+      setGarageForm({
+        nomGarage: normalizedGarage.nomGarage,
+        emailGarage: normalizedGarage.emailGarage,
+        telephoneGarage: normalizedGarage.telephoneGarage,
+        adresseGarage: normalizedGarage.adresseGarage,
+        ville: normalizedGarage.ville,
+        postalCode: normalizedGarage.postalCode,
+        id_ville: normalizedGarage.id_ville,
+        code_insee: normalizedGarage.code_insee,
+      });
+
+      if (normalizedGarage.id) {
+        const [horairesResult, joursResult, associationsResult] = await Promise.allSettled([
+          getHorairesByGarage(token, normalizedGarage.id),
+          getJours(),
+          getAssociations(),
+        ]);
+
+        const horairesResponse = horairesResult.status === 'fulfilled' ? horairesResult.value : [];
+        const joursResponse = joursResult.status === 'fulfilled' ? joursResult.value : [];
+        const associationsResponse = associationsResult.status === 'fulfilled' ? associationsResult.value : [];
+
+        const order = {
+          lundi: 1,
+          mardi: 2,
+          mercredi: 3,
+          jeudi: 4,
+          vendredi: 5,
+          samedi: 6,
+          dimanche: 7,
+        };
+
+        const jours = (Array.isArray(joursResponse) ? joursResponse : [])
+          .map((jour) => ({
+            jourId: String(jour?.id_jour ?? jour?.idJour ?? jour?.id ?? ''),
+            libJour: jour?.lib_jour || jour?.libJour || 'Jour',
+          }))
+          .filter((jour) => jour.jourId)
+          .sort((a, b) => {
+            const aKey = (a.libJour || '').toLowerCase();
+            const bKey = (b.libJour || '').toLowerCase();
+            return (order[aKey] || 99) - (order[bKey] || 99);
+          });
+
+        const normalizedHoraires = (Array.isArray(horairesResponse) ? horairesResponse : [])
+          .map((item) => normalizeHorairePayload(item))
+          .filter((item) => item.id);
+
+        const findHoraireIdByTimes = ({ hreOuvreMatin, hreFermeMatin, hreOuvreSoir, hreFermeSoir }) => {
+          const matched = normalizedHoraires.find((item) => (
+            item.hreOuvreMatin === hreOuvreMatin
+            && item.hreFermeMatin === hreFermeMatin
+            && item.hreOuvreSoir === hreOuvreSoir
+            && item.hreFermeSoir === hreFermeSoir
+          ));
+
+          return matched?.id || '';
+        };
+
+        const defaultHoraireId = findHoraireIdByTimes({
+          hreOuvreMatin: '08:00',
+          hreFermeMatin: '12:00',
+          hreOuvreSoir: '14:00',
+          hreFermeSoir: '18:00',
+        });
+
+        const assocForGarage = (Array.isArray(associationsResponse) ? associationsResponse : [])
+          .filter((assoc) => String(assoc?.id_garage ?? assoc?.idGarage ?? assoc?.garage?.id_garage ?? assoc?.garage?.idGarage ?? '') === String(normalizedGarage.id));
+
+        const weekDays = FALLBACK_DAYS.map((fallbackDay) => {
+          const matchedDay = jours.find((jour) => (
+            String(jour.jourId) === String(fallbackDay.jourId)
+            || normalizeDayLabel(jour.libJour) === normalizeDayLabel(fallbackDay.libJour)
+          ));
+
+          return matchedDay || fallbackDay;
+        });
+
+        const initialWeek = weekDays.map((jour) => {
+          const assoc = assocForGarage.find(
+            (item) => String(item?.id_jour ?? item?.idJour ?? item?.jour?.id_jour ?? item?.jour?.idJour ?? '') === String(jour.jourId)
+          );
+
+          if (!assoc) {
+            return {
+              jourId: jour.jourId,
+              libJour: jour.libJour,
+              horaireId: String(defaultHoraireId || ''),
+              hasAssociation: false,
+              mode: 'open',
+              hreOuvreMatin: '08:00',
+              hreFermeMatin: '12:00',
+              hreOuvreSoir: '14:00',
+              hreFermeSoir: '18:00',
+            };
+          }
+
+          const assocHoraireId = String(
+            assoc?.id_horaire
+            ?? assoc?.idHoraire
+            ?? assoc?.horaire?.id_horaire
+            ?? assoc?.horaire?.idHoraire
+            ?? ''
+          );
+
+          const linkedHoraire = normalizedHoraires.find((item) => String(item.id) === assocHoraireId);
+
+          const matinOuvre = assoc?.hre_ouvre_matin || assoc?.hreOuvreMatin || assoc?.horaire?.hre_ouvre_matin || assoc?.horaire?.hreOuvreMatin || linkedHoraire?.hreOuvreMatin || '08:00';
+          const matinFerme = assoc?.hre_ferme_matin || assoc?.hreFermeMatin || assoc?.horaire?.hre_ferme_matin || assoc?.horaire?.hreFermeMatin || linkedHoraire?.hreFermeMatin || '12:00';
+          const soirOuvre = assoc?.hre_ouvre_soir || assoc?.hreOuvreSoir || assoc?.horaire?.hre_ouvre_soir || assoc?.horaire?.hreOuvreSoir || linkedHoraire?.hreOuvreSoir || '14:00';
+          const soirFerme = assoc?.hre_ferme_soir || assoc?.hreFermeSoir || assoc?.horaire?.hre_ferme_soir || assoc?.horaire?.hreFermeSoir || linkedHoraire?.hreFermeSoir || '18:00';
+
+          const matinClosed = matinOuvre === '00:00' && matinFerme === '00:00';
+          const soirClosed = soirOuvre === '00:00' && soirFerme === '00:00';
+
+          let mode = 'open';
+          if (matinClosed && soirClosed) mode = 'closed';
+          else if (matinClosed) mode = 'closed_morning';
+          else if (soirClosed) mode = 'closed_afternoon';
+
+          const resolvedHoraireId = assocHoraireId || findHoraireIdByTimes({
+            hreOuvreMatin: matinOuvre,
+            hreFermeMatin: matinFerme,
+            hreOuvreSoir: soirOuvre,
+            hreFermeSoir: soirFerme,
+          });
+
+          return {
+            jourId: jour.jourId,
+            libJour: jour.libJour,
+            horaireId: String(resolvedHoraireId || ''),
+            hasAssociation: true,
+            mode,
+            hreOuvreMatin: matinOuvre,
+            hreFermeMatin: matinFerme,
+            hreOuvreSoir: soirOuvre,
+            hreFermeSoir: soirFerme,
+          };
+        });
+
+        setWeekSchedule(initialWeek);
+        setInitialWeekSchedule(initialWeek);
+      }
+    } catch (err) {
+      setWeekSchedule((prev) => (prev?.length ? prev : buildDefaultWeekSchedule()));
+      setSettingsError(err.message || 'Impossible de charger les parametres du garage.');
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, [token, storedGarageId, garageId, normalizeGaragePayload]);
+
+  useEffect(() => {
+    if (isAuthenticated && (activeTab === 'settings' || activeTab === 'calendar')) {
+      loadGarageSettings();
+    }
+  }, [isAuthenticated, activeTab, loadGarageSettings]);
+
+  useEffect(() => {
+    const loadStatuses = async () => {
+      if (!token || !isAuthenticated) return;
+
+      try {
+        const response = await getStatusRendezVous(token);
+        const nextStatusMap = { ...DEFAULT_STATUS_MAP };
+
+        (Array.isArray(response) ? response : []).forEach((item) => {
+          const statusKey = mapStatusIdToKey(item?.id_status_rdv, item?.lib_status_rdv);
+          nextStatusMap[statusKey] = Number(item?.id_status_rdv || nextStatusMap[statusKey] || 0);
+        });
+
+        setStatusMap(nextStatusMap);
+      } catch {
+        setStatusMap(DEFAULT_STATUS_MAP);
+      }
+    };
+
+    loadStatuses();
+  }, [token, isAuthenticated]);
+
+  const loadRemoteGarageAppointments = useCallback(async () => {
+    const currentGarageId = garageId || storedGarageId;
+    console.log('🔍 ID Garage utilisé pour charger les RDV:', currentGarageId);
+    console.log('🔍 garageId (state):', garageId, '| storedGarageId (localStorage):', storedGarageId);
+    
+    if (!currentGarageId) {
+      console.warn('⚠️ Aucun ID garage trouvé !');
+      setRemoteAppointments([]);
+      return;
+    }
+
+    try {
+      console.log('🔄 Chargement des RDV du garage ID:', currentGarageId);
+      const response = await getGarageRendezVous(token, currentGarageId);
+      console.log('✅ RDV reçus:', response);
+      
+      console.log('📦 Structure premier RDV:', response?.[0]);
+      
+      const normalized = (Array.isArray(response) ? response : []).map((item) => {
+        const start = item?.date_debut ? new Date(String(item.date_debut).replace(' ', 'T')) : null;
+        
+        // Debug: log les clés disponibles
+        if (item?.id_rdv && item.id_rdv < 5) {
+          console.log(`🔍 RDV ${item.id_rdv} - Clés:`, Object.keys(item || {}));
+          console.log(`🔍 RDV ${item.id_rdv} - id_client:`, item?.id_client, 'client:', item?.client, 'utilisateur:', item?.utilisateur);
+        }
+        
+        // Extraire les infos client si disponibles (plusieurs formats possibles)
+        let client = item?.client || item?.utilisateur || item?.user || {};
+        // Si c'est juste un ID, chercher dans d'autres champs
+        if (!client?.prenom && !client?.nom && item?.nom_client) {
+          client = { 
+            prenom: item?.prenom_client || '', 
+            nom: item?.nom_client || '',
+            email: item?.email_client || '' 
+          };
+        }
+        
+        const vehicule = item?.vehicule || item?.vehicle || item?.voiture || {};
+        const prestation = item?.prestation || item?.service || {};
+
+        return {
+          id: `api-${item?.id_rdv}`,
+          backendId: String(item?.id_rdv || ''),
+          garageId: String(item?.id_garage || currentGarageId),
+          garageName: connectedGarageName || storedGarageName || 'Garage',
+          service: String(prestation?.id_prestation || item?.id_prestation || 'rdv'),
+          serviceName: prestation?.nom_prestation || item?.nom_prestation || item?.lib_prestation || 'Rendez-vous',
+          client: {
+            firstName: client?.prenom || client?.prenom_client || item?.prenom_client || '',
+            lastName: client?.nom || client?.nom_client || item?.nom_client || '',
+            email: client?.email || client?.email_utilisateur || item?.email_client || '',
+            phone: client?.telephone || client?.tel || item?.tel_client || '',
+          },
+          vehicle: {
+            plate: vehicule?.immatriculation || vehicule?.plaque || item?.immatriculation || '-',
+            // Gérer le cas où marque est un objet (on prend nom_marque) ou une string
+            brand: typeof vehicule?.marque === 'string' 
+              ? vehicule.marque 
+              : (vehicule?.marque?.nom_marque || item?.marque_vehicule || ''),
+            model: typeof vehicule?.modele === 'string' 
+              ? vehicule.modele 
+              : (vehicule?.modele?.nom_modele || item?.modele_vehicule || ''),
+          },
+          date: start && !Number.isNaN(start.getTime()) ? toLocalISODate(start) : '',
+          time: start && !Number.isNaN(start.getTime()) ? toLocalTime(start) : '',
+          status: mapStatusIdToKey(item?.id_status_rdv, item?.lib_status_rdv),
+          notes: item?.commantaire_client || item?.motif_refus || '',
+        };
+      }).filter((item) => item.date && item.time);
+
+      console.log('📋 RDV normalisés:', normalized);
+      setRemoteAppointments(normalized);
+    } catch (err) {
+      console.error('❌ Erreur chargement RDV:', err);
+      setRemoteAppointments([]);
+    }
+  }, [garageId, storedGarageId, token, connectedGarageName, storedGarageName]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadRemoteGarageAppointments();
+    }
+  }, [isAuthenticated, loadRemoteGarageAppointments]);
+
+  // Charger les historiques
+  const loadHistoriques = useCallback(async () => {
+    const currentGarageId = garageId || storedGarageId;
+    if (!token || !currentGarageId) return;
+    
+    setHistoriquesLoading(true);
+    setHistoriquesError('');
+    
+    try {
+      // Appel API avec le garageId pour filtrer
+      const response = await getHistoriques(token, null, currentGarageId);
+      console.log('📜 Historiques reçus:', response);
+      
+      const normalized = (Array.isArray(response) ? response : []).map((item) => ({
+        id: item?.id_historique || item?.id,
+        dateIntervention: item?.date_intervention || item?.dateIntervention,
+        compteRendu: item?.compte_rendu || item?.compteRendu,
+        rdv: {
+          id: item?.rdv?.id_rdv || item?.rdv?.id,
+          dateDebut: item?.rdv?.date_debut || item?.rdv?.dateDebut,
+          dateFin: item?.rdv?.date_fin || item?.rdv?.dateFin,
+        },
+      }));
+      
+      setHistoriques(normalized);
+    } catch (err) {
+      console.error('❌ Erreur chargement historiques:', err);
+      setHistoriquesError(err.message || 'Impossible de charger l\'historique.');
+      setHistoriques([]);
+    } finally {
+      setHistoriquesLoading(false);
+    }
+  }, [token, garageId, storedGarageId]);
+
+  // Charger les historiques quand l'onglet est actif
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'history') {
+      loadHistoriques();
+    }
+  }, [isAuthenticated, activeTab, loadHistoriques]);
+
+  const garageAppointments = useMemo(() => {
+    // On utilise UNIQUEMENT les rendez-vous de l'API (remoteAppointments)
+    const validRemote = (Array.isArray(remoteAppointments) ? remoteAppointments : [])
+      .filter((apt) => apt?.backendId); // Juste vérifier qu'il y a un backendId
+    
+    console.log('📊 garageAppointments:', validRemote.length, 'RDV depuis API');
+    console.log('📋 Premier RDV:', validRemote[0]);
+    
+    return validRemote;
+  }, [remoteAppointments]);
 
   // Filtrer les rendez-vous
   const filteredAppointments = useMemo(() => {
-    return appointments.filter(apt => {
-      const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
-      const matchesSearch = 
-        apt.client.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        apt.client.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        apt.vehicle.plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        apt.id.toLowerCase().includes(searchQuery.toLowerCase());
+    console.log('🔍 Filtrage - statusFilter:', statusFilter, 'searchQuery:', searchQuery);
+    console.log('🔍 Nombre RDV avant filtre:', garageAppointments.length);
+    console.log('🔍 Premier RDV:', garageAppointments[0]);
+    
+    const filtered = garageAppointments.filter((apt) => {
+      // Normaliser le statut pour comparaison
+      const aptStatus = String(apt?.status || '').toLowerCase().trim();
+      const filterStatus = String(statusFilter || '').toLowerCase().trim();
+      
+      // Si filtre = 'all', tout accepter
+      // Sinon comparer exactement ou partiellement
+      const matchesStatus = filterStatus === 'all' || aptStatus === filterStatus;
+      
+      const searchHaystack = `${apt?.client?.firstName || ''} ${apt?.client?.lastName || ''} ${apt?.vehicle?.plate || ''} ${apt?.serviceName || ''} ${apt?.id || ''}`.toLowerCase();
+      const matchesSearch = !searchQuery || searchHaystack.includes(searchQuery.toLowerCase());
+      
+      console.log('🔍 RDV', apt.id, '- statut:', aptStatus, '- matchesStatus:', matchesStatus);
+      
       return matchesStatus && matchesSearch;
     });
-  }, [appointments, statusFilter, searchQuery]);
+    
+    console.log('🔍 Nombre RDV après filtre:', filtered.length);
+    return filtered;
+  }, [garageAppointments, statusFilter, searchQuery]);
+
+  const pendingAppointments = useMemo(() => {
+    return [...garageAppointments]
+      .filter((appointment) => {
+        const status = String(appointment?.status || '').toLowerCase().trim();
+        return ['pending', 'reserved', 'en attente', '2'].includes(status) || status.includes('attente');
+      })
+      .sort((a, b) => new Date(`${a?.date || ''}T${a?.time || '00:00'}`).getTime() - new Date(`${b?.date || ''}T${b?.time || '00:00'}`).getTime());
+  }, [garageAppointments]);
+
+  // Fonction utilitaire pour vérifier si un rendez-vous est actif (affichable)
+  const isAppointmentActive = useCallback((status) => {
+    const normalizedStatus = String(status || '').toLowerCase().trim();
+    // Liste des statuts inactifs (annulés/refusés)
+    const inactiveStatuses = [
+      'cancelled_client', 'cancelled_garage', 'refused',
+      'annulé client', 'annulé garage', 'refusé',
+      'annule client', 'annule garage', 'refuse',
+      '4', '5', '6'  // IDs des statuts: Refusé(4), Annulé client(5), Annulé garage(6)
+    ];
+    return !inactiveStatuses.includes(normalizedStatus);
+  }, []);
+
+  const weekCalendarDays = useMemo(() => {
+    const weekStart = getWeekStart(currentDate);
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + index);
+
+      const isoDate = toLocalISODate(dayDate);
+      const dayName = normalizeDayLabel(dayDate.toLocaleDateString('fr-FR', { weekday: 'long' }));
+      const daySchedule = (weekSchedule || []).find((day) => normalizeDayLabel(day?.libJour) === dayName);
+      const morningSlots = daySchedule ? buildSlotsBetween(daySchedule.hreOuvreMatin, daySchedule.hreFermeMatin) : [];
+      const eveningSlots = daySchedule ? buildSlotsBetween(daySchedule.hreOuvreSoir, daySchedule.hreFermeSoir) : [];
+      const daySlots = [...morningSlots, ...eveningSlots];
+
+      return {
+        isoDate,
+        label: dayDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
+        slots: daySlots.map((time) => ({
+          time,
+          appointment: garageAppointments.find((appointment) => (
+            appointment?.date === isoDate
+            && appointment?.time === time
+            && isAppointmentActive(appointment?.status)
+          )) || null,
+        })),
+      };
+    });
+  }, [currentDate, weekSchedule, garageAppointments, isAppointmentActive]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Statistiques
+  const today = toLocalISODate(new Date());
   const stats = [
     { 
       label: 'RDV du jour', 
-      value: appointments.filter(a => a.date === new Date().toISOString().split('T')[0]).length,
+      value: garageAppointments.filter((a) => a.date === today && isAppointmentActive(a.status)).length,
       icon: Calendar,
       color: 'blue'
     },
     { 
-      label: 'En attente', 
-      value: appointments.filter(a => a.status === 'pending').length,
+      label: 'À confirmer', 
+      value: garageAppointments.filter((a) => {
+        const s = String(a?.status || '').toLowerCase();
+        return ['pending', 'reserved', 'en attente'].includes(s) || s.includes('attente');
+      }).length,
       icon: Clock,
       color: 'yellow'
     },
     { 
       label: 'Confirmés', 
-      value: appointments.filter(a => a.status === 'confirmed').length,
+      value: garageAppointments.filter((a) => {
+        const s = String(a?.status || '').toLowerCase();
+        return s === 'confirmed' || s === 'confirmé' || s === '2';
+      }).length,
       icon: CheckCircle,
       color: 'green'
     },
     { 
       label: 'Total clients', 
-      value: new Set(appointments.map(a => a.client.email)).size,
+      value: new Set(garageAppointments.map((a) => a?.client?.email || a?.id).filter(Boolean)).size,
       icon: Users,
       color: 'purple'
     },
   ];
 
   const handleLogout = () => {
+    clearStoredAuth();
     logoutGarage();
     navigate('/garage');
   };
@@ -98,12 +816,54 @@ const GarageDashboard = () => {
   const handleViewDetail = (appointment) => {
     setSelectedAppointment(appointment);
     setIsDetailModalOpen(true);
+    setIsNotificationsOpen(false);
   };
 
-  const handleStatusChange = (appointmentId, newStatus) => {
-    updateAppointmentStatus(appointmentId, newStatus);
-    if (selectedAppointment?.id === appointmentId) {
-      setSelectedAppointment({ ...selectedAppointment, status: newStatus });
+  const handleNotificationClick = (appointment) => {
+    setStatusFilter('pending');
+    setActiveTab('appointments');
+    setHighlightedAppointmentId(String(appointment?.id || ''));
+    handleViewDetail(appointment);
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById(`garage-appointment-${appointment?.id}`);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    });
+  };
+
+  const handleStatusChange = async (appointmentId, newStatus) => {
+    const targetAppointment = garageAppointments.find((appointment) => appointment.id === appointmentId);
+
+    try {
+      const hasBackendBinding = Boolean(targetAppointment?.backendId) || String(targetAppointment?.id || '').startsWith('api-');
+      const backendId = hasBackendBinding
+        ? Number(targetAppointment?.backendId || String(targetAppointment?.id || '').replace(/\D+/g, ''))
+        : 0;
+      const statusId = Number(statusMap?.[newStatus] || DEFAULT_STATUS_MAP[newStatus] || 0);
+
+      if (backendId && token && statusId) {
+        await changeRendezVousStatus(token, {
+          id_rdv: backendId,
+          id_status_rdv: statusId,
+        });
+      }
+
+      updateAppointmentStatus(appointmentId, newStatus);
+      setRemoteAppointments((prev) => prev.map((appointment) => (
+        appointment.id === appointmentId || appointment.backendId === String(backendId)
+          ? { ...appointment, status: newStatus }
+          : appointment
+      )));
+
+      if (selectedAppointment?.id === appointmentId) {
+        setSelectedAppointment({ ...selectedAppointment, status: newStatus });
+      }
+    } catch (error) {
+      setSettingsError(error.message || 'Impossible de changer le statut du rendez-vous.');
     }
   };
 
@@ -116,6 +876,356 @@ const GarageDashboard = () => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + days);
     setCurrentDate(newDate);
+  };
+
+  const searchFrenchCities = async (value) => {
+    if (!value.trim()) {
+      setCitySuggestions([]);
+      return;
+    }
+
+    const localSuggestions = getLocalCitySuggestions(value);
+    setCitySuggestions(localSuggestions);
+    setCityLoading(true);
+    try {
+      const suggestions = await getFrenchCitySuggestions(value);
+      const merged = [...localSuggestions];
+
+      suggestions.forEach((suggestion) => {
+        const exists = merged.some((item) => item.label === suggestion.label);
+        if (!exists) {
+          merged.push(suggestion);
+        }
+      });
+
+      setCitySuggestions(merged);
+    } catch {
+      setCitySuggestions(localSuggestions);
+    } finally {
+      setCityLoading(false);
+    }
+  };
+
+  const searchFrenchAddresses = async (value, city = '', postcode = '') => {
+    if (!value.trim()) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    setAddressLoading(true);
+    try {
+      const suggestions = await getFrenchAddressSuggestions(value, { city, postcode });
+      setAddressSuggestions(suggestions);
+    } catch {
+      setAddressSuggestions([]);
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  const handleGarageFieldChange = (event) => {
+    const { name, value } = event.target;
+
+    setGarageForm((current) => ({
+      ...current,
+      [name]: value,
+      ...(name === 'ville' ? { id_ville: '', code_insee: '', postalCode: '' } : {}),
+    }));
+
+    if (name === 'ville') {
+      searchFrenchCities(value);
+    }
+
+    if (name === 'adresseGarage') {
+      searchFrenchAddresses(value, garageForm.ville, garageForm.postalCode);
+    }
+  };
+
+  const selectCitySuggestion = (suggestion) => {
+    const matchedVilleId = findMatchingVilleId({
+      cityName: suggestion.city,
+      postcode: suggestion.postcode,
+      codeInsee: suggestion.codeInsee,
+    });
+
+    setGarageForm((current) => ({
+      ...current,
+      ville: suggestion.city,
+      postalCode: suggestion.postcode,
+      code_insee: suggestion.codeInsee,
+      id_ville: matchedVilleId,
+    }));
+    setCitySuggestions([]);
+    setSettingsError('');
+  };
+
+  const selectAddressSuggestion = (suggestion) => {
+    const matchedVilleId = findMatchingVilleId({
+      cityName: suggestion.city,
+      postcode: suggestion.postcode,
+      codeInsee: suggestion.codeInsee,
+    });
+
+    setGarageForm((current) => ({
+      ...current,
+      adresseGarage: suggestion.address,
+      ville: suggestion.city || current.ville,
+      postalCode: suggestion.postcode || current.postalCode,
+      code_insee: suggestion.codeInsee || current.code_insee,
+      id_ville: matchedVilleId || current.id_ville,
+    }));
+    setAddressSuggestions([]);
+    setSettingsError('');
+  };
+
+  const handleSaveGarageInfo = async () => {
+    if (!token) return;
+
+    const resolvedVilleId = garageForm.id_ville || findMatchingVilleId({
+      cityName: garageForm.ville,
+      postcode: garageForm.postalCode,
+      codeInsee: garageForm.code_insee,
+    });
+
+    if (!garageForm.nomGarage.trim() || !garageForm.emailGarage.trim() || !garageForm.telephoneGarage.trim() || !garageForm.adresseGarage.trim()) {
+      setSettingsError('Merci de remplir le nom, l email, le telephone et l adresse du garage.');
+      return;
+    }
+
+    if (!isValidEmailFormat(garageForm.emailGarage)) {
+      setSettingsError('Merci de saisir une adresse email valide avant la modification.');
+      return;
+    }
+
+    setSettingsSaving(true);
+    setSettingsMessage('');
+    setSettingsError('');
+
+    try {
+      await updateGarageProfile(token, {
+        idGarage: garageId || undefined,
+        nomGarage: garageForm.nomGarage.trim(),
+        emailGarage: garageForm.emailGarage.trim(),
+        telephoneGarage: garageForm.telephoneGarage.trim(),
+        adresseGarage: garageForm.adresseGarage.trim(),
+        ville: garageForm.ville.trim(),
+        postalCode: garageForm.postalCode.trim(),
+        codeInsee: garageForm.code_insee || undefined,
+        villeId: resolvedVilleId ? Number(resolvedVilleId) : undefined,
+      });
+      setConnectedGarageName(garageForm.nomGarage.trim());
+      setGarageForm((prev) => ({ ...prev, id_ville: resolvedVilleId || prev.id_ville }));
+      setSettingsMessage('Informations du garage mises a jour avec succes.');
+      await loadGarageSettings();
+    } catch (err) {
+      setSettingsError(err.message || 'Impossible de modifier les informations du garage.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const handlePasswordFieldChange = (event) => {
+    const { name, value } = event.target;
+    setPasswordForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+    setSettingsError('');
+    setSettingsMessage('');
+  };
+
+  const handleSavePassword = async () => {
+    if (!token) return;
+
+    // Validation des champs
+    if (!passwordForm.currentPassword.trim() || !passwordForm.newPassword.trim() || !passwordForm.confirmPassword.trim()) {
+      setSettingsError('Merci de renseigner le mot de passe actuel et le nouveau mot de passe.');
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setSettingsError('Le nouveau mot de passe doit contenir au minimum 6 caracteres.');
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setSettingsError('La confirmation du nouveau mot de passe ne correspond pas.');
+      return;
+    }
+
+    setSettingsSaving(true);
+    setSettingsMessage('');
+    setSettingsError('');
+
+    console.log('🔄 Tentative de changement de mot de passe...');
+    console.log('  - Garage ID:', garageId);
+    console.log('  - User ID:', storedUserId);
+    console.log('  - Email:', storedGarageEmail);
+
+    try {
+      const payload = {
+        idGarage: garageId || undefined,
+        userId: storedUserId || undefined,
+        emailGarage: storedGarageEmail || undefined,
+        emailUtilisateur: storedGarageEmail || undefined,
+        currentPassword: passwordForm.currentPassword,
+        ancienMdp: passwordForm.currentPassword,
+        oldPassword: passwordForm.currentPassword,
+        mdp: passwordForm.newPassword,
+        mdpUtilisateur: passwordForm.newPassword,
+        password: passwordForm.newPassword,
+        newPassword: passwordForm.newPassword,
+        confirmPassword: passwordForm.confirmPassword,
+      };
+
+      console.log('📤 Payload envoyé:', { ...payload, currentPassword: '***', mdp: '***', password: '***', newPassword: '***' });
+
+      const result = await changeGaragePassword(token, payload);
+      console.log('✅ Résultat:', result);
+
+      // Vider le formulaire
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      
+      setSettingsMessage('Mot de passe mis à jour avec succès ! Vous pouvez vous reconnecter avec le nouveau mot de passe.');
+    } catch (err) {
+      console.error('❌ Erreur changement mot de passe:', err);
+      setSettingsError(err.message || 'Impossible de modifier le mot de passe. Vérifiez que le mot de passe actuel est correct.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const handleSaveHoraires = async () => {
+    if (!token || !garageId) {
+      setSettingsError('Garage introuvable pour la mise a jour des horaires.');
+      return;
+    }
+
+    setSettingsSaving(true);
+    setSettingsMessage('');
+    setSettingsError('');
+
+    try {
+      const hasDayChanged = (day) => {
+        const initialDay = (initialWeekSchedule || []).find((item) => String(item.jourId) === String(day.jourId));
+        if (!initialDay) return true;
+
+        return (
+          initialDay.mode !== day.mode
+          || initialDay.hreOuvreMatin !== day.hreOuvreMatin
+          || initialDay.hreFermeMatin !== day.hreFermeMatin
+          || initialDay.hreOuvreSoir !== day.hreOuvreSoir
+          || initialDay.hreFermeSoir !== day.hreFermeSoir
+        );
+      };
+
+      const daysToPersist = (weekSchedule || []).filter((day) => !day.hasAssociation || hasDayChanged(day));
+
+      if (!daysToPersist.length) {
+        setSettingsMessage('Aucune modification detectee sur les horaires.');
+        setSettingsSaving(false);
+        return;
+      }
+
+      const planningToCreate = [];
+      const nextSchedule = [...weekSchedule];
+
+      for (const day of daysToPersist) {
+        const hadExistingAssociation = Boolean(day.hasAssociation);
+        const payloadHours = day.mode === 'closed'
+          ? {
+              hreOuvreMatin: '00:00',
+              hreFermeMatin: '00:00',
+              hreOuvreSoir: '00:00',
+              hreFermeSoir: '00:00',
+            }
+          : {
+              hreOuvreMatin: day.mode === 'closed_morning' ? '00:00' : day.hreOuvreMatin,
+              hreFermeMatin: day.mode === 'closed_morning' ? '00:00' : day.hreFermeMatin,
+              hreOuvreSoir: day.mode === 'closed_afternoon' ? '00:00' : day.hreOuvreSoir,
+              hreFermeSoir: day.mode === 'closed_afternoon' ? '00:00' : day.hreFermeSoir,
+            };
+
+        const response = await upsertGarageHoraire(token, {
+          idGarage: garageId,
+          idHoraire: day.horaireId || undefined,
+          ...payloadHours,
+        });
+
+        const normalizedHoraire = normalizeHorairePayload(response?.horaire || response);
+        const resolvedHoraireId = normalizedHoraire.id || day.horaireId;
+        if (!resolvedHoraireId) {
+          throw new Error(`Impossible de determiner l horaire pour ${day.libJour}.`);
+        }
+
+        if (!hadExistingAssociation) {
+          planningToCreate.push({
+            jourId: Number(day.jourId),
+            idJour: Number(day.jourId),
+            id_jour: Number(day.jourId),
+            horaireId: Number(resolvedHoraireId),
+            idHoraire: Number(resolvedHoraireId),
+            id_horaire: Number(resolvedHoraireId),
+          });
+        }
+
+        const index = nextSchedule.findIndex((item) => String(item.jourId) === String(day.jourId));
+        if (index >= 0) {
+          nextSchedule[index] = {
+            ...nextSchedule[index],
+            horaireId: String(resolvedHoraireId),
+            hasAssociation: true,
+          };
+        }
+      }
+
+      if (planningToCreate.length) {
+        try {
+          await updateGaragePlanning(token, {
+            idGarage: garageId,
+            planning: planningToCreate,
+          });
+        } catch (planningError) {
+          const message = planningError?.message || '';
+          const isDuplicateAssociationError = /Associer|identity map|already present/i.test(message);
+
+          if (!isDuplicateAssociationError) {
+            throw planningError;
+          }
+        }
+      }
+
+      setWeekSchedule(nextSchedule);
+      setInitialWeekSchedule(nextSchedule);
+      setSettingsMessage('Horaires d ouverture mis a jour avec succes.');
+      await loadGarageSettings();
+    } catch (err) {
+      setSettingsError(err.message || 'Impossible de modifier les horaires du garage.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const handleWeekDayChange = (jourId, field, value) => {
+    setWeekSchedule((prev) =>
+      prev.map((day) => (String(day.jourId) === String(jourId) ? { ...day, [field]: value } : day))
+    );
+  };
+
+  const openGarageSettings = () => {
+    setSettingsMessage('');
+    setSettingsError('');
+    setActiveTab('settings');
+  };
+
+  const openPasswordResetPage = () => {
+    setSettingsMessage('');
+    setSettingsError('');
+    setActiveTab('settings');
   };
 
   return (
@@ -154,6 +1264,20 @@ const GarageDashboard = () => {
             <span>Clients</span>
           </button>
           <button
+            className={`garage-dashboard-nav-item ${activeTab === 'prestations' ? 'active' : ''}`}
+            onClick={() => setActiveTab('prestations')}
+          >
+            <Wrench size={20} />
+            <span>Prestations</span>
+          </button>
+          <button
+            className={`garage-dashboard-nav-item ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            <History size={20} />
+            <span>Historique</span>
+          </button>
+          <button
             className={`garage-dashboard-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
           >
@@ -179,20 +1303,71 @@ const GarageDashboard = () => {
               {activeTab === 'appointments' && 'Gestion des rendez-vous'}
               {activeTab === 'calendar' && 'Agenda'}
               {activeTab === 'clients' && 'Clients'}
+              {activeTab === 'history' && 'Historique des interventions'}
               {activeTab === 'settings' && 'Paramètres'}
             </h1>
+            <p className="garage-dashboard-header-subtitle">Bonjour {connectedGarageName}</p>
           </div>
           <div className="garage-dashboard-header-right">
-            <button className="garage-dashboard-header-button">
-              <Bell size={20} />
-              <span className="garage-dashboard-header-badge">3</span>
-            </button>
+            <div className="garage-dashboard-notifications">
+              <button
+                type="button"
+                className="garage-dashboard-header-button"
+                onClick={() => setIsNotificationsOpen((prev) => !prev)}
+                aria-label="Voir les rendez-vous en attente"
+                title="Rendez-vous en attente"
+              >
+                <Bell size={20} />
+                <span className="garage-dashboard-header-badge">{pendingAppointments.length}</span>
+              </button>
+
+              {isNotificationsOpen && (
+                <div className="garage-dashboard-notifications-panel">
+                  <div className="garage-dashboard-notifications-header">
+                    <strong>Rendez-vous en attente</strong>
+                    <span>{pendingAppointments.length}</span>
+                  </div>
+
+                  <div className="garage-dashboard-notifications-list">
+                    {pendingAppointments.length === 0 ? (
+                      <div className="garage-dashboard-notifications-empty">
+                        Aucun rendez-vous en attente de validation.
+                      </div>
+                    ) : (
+                      pendingAppointments.map((appointment) => (
+                        <button
+                          key={appointment.id}
+                          type="button"
+                          className="garage-dashboard-notification-item"
+                          onClick={() => handleNotificationClick(appointment)}
+                        >
+                          <div className="garage-dashboard-notification-top">
+                            <span className="garage-dashboard-notification-client">
+                              {(appointment.client?.firstName || appointment.client?.lastName)
+                                ? `${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''}`.trim()
+                                : 'Client inconnu'}
+                            </span>
+                            <span className="garage-dashboard-notification-status">À valider</span>
+                          </div>
+                          <span className="garage-dashboard-notification-service">
+                            {appointment.serviceName || getServiceName(appointment.service)}
+                          </span>
+                          <span className="garage-dashboard-notification-meta">
+                            {new Date(appointment.date).toLocaleDateString('fr-FR')} à {appointment.time}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="garage-dashboard-user">
               <div className="garage-dashboard-user-avatar">
-                {garageAuth.user?.name?.charAt(0) || 'G'}
+                {connectedGarageName?.charAt(0) || 'G'}
               </div>
               <span className="garage-dashboard-user-name">
-                {garageAuth.user?.name || 'Garage'}
+                {connectedGarageName || 'Garage'}
               </span>
             </div>
           </div>
@@ -202,6 +1377,26 @@ const GarageDashboard = () => {
         <div className="garage-dashboard-content">
           {activeTab === 'appointments' && (
             <>
+              <Card className="garage-dashboard-quick-actions">
+                <CardContent className="garage-dashboard-quick-action-card">
+                  <div className="garage-dashboard-quick-action-text">
+                    <h3>Informations du garage</h3>
+                    <p>Besoin de mettre a jour vos coordonnees ou votre mot de passe de connexion ? Accedez rapidement aux actions de votre compte.</p>
+                  </div>
+                  <div className="garage-dashboard-quick-action-actions">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={openGarageSettings}
+                      className="garage-dashboard-quick-action-button"
+                    >
+                      <Settings size={16} />
+                      Modifier les informations du garage
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Stats */}
               <div className="garage-dashboard-stats">
                 {stats.map((stat, index) => (
@@ -245,8 +1440,9 @@ const GarageDashboard = () => {
                       className="garage-dashboard-filter-select"
                     >
                       <option value="all">Tous les statuts</option>
-                      <option value="pending">En attente</option>
-                      <option value="confirmed">Confirmés</option>
+                      <option value="reserved">Réservés</option>
+                      <option value="pending">En attente (Pending)</option>
+                      <option value="confirmed">Confirmés (Confirmed)</option>
                       <option value="completed">Terminés</option>
                       <option value="cancelled_client">Annulés client</option>
                       <option value="cancelled_garage">Annulés garage</option>
@@ -261,7 +1457,6 @@ const GarageDashboard = () => {
                   <table className="garage-dashboard-table">
                     <thead>
                       <tr>
-                        <th>RDV</th>
                         <th>Client</th>
                         <th>Véhicule</th>
                         <th>Prestation</th>
@@ -272,29 +1467,40 @@ const GarageDashboard = () => {
                     </thead>
                     <tbody>
                       {filteredAppointments.map((appointment) => (
-                        <tr key={appointment.id}>
-                          <td className="garage-dashboard-table-id">{appointment.id}</td>
+                        <tr
+                          id={`garage-appointment-${appointment.id}`}
+                          key={appointment.id}
+                          className={String(highlightedAppointmentId) === String(appointment.id) ? 'garage-dashboard-table-row-active' : ''}
+                        >
                           <td>
                             <div className="garage-dashboard-table-client">
                               <span className="garage-dashboard-table-name">
-                                {appointment.client.firstName} {appointment.client.lastName}
+                                {(appointment.client?.firstName || appointment.client?.lastName) 
+                                  ? `${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''}`.trim()
+                                  : 'Client inconnu'}
                               </span>
-                              <span className="garage-dashboard-table-email">
-                                {appointment.client.email}
-                              </span>
+                              {appointment.client?.email && (
+                                <span className="garage-dashboard-table-email">
+                                  {appointment.client.email}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td>
                             <div className="garage-dashboard-table-vehicle">
                               <span className="garage-dashboard-table-plate">
-                                {appointment.vehicle.plate}
+                                {appointment.vehicle?.plate || '-'}
                               </span>
                               <span className="garage-dashboard-table-car">
-                                {appointment.vehicle.brand} {appointment.vehicle.model}
+                                {typeof appointment.vehicle?.brand === 'string' ? appointment.vehicle.brand : ''} {typeof appointment.vehicle?.model === 'string' ? appointment.vehicle.model : ''}
                               </span>
                             </div>
                           </td>
-                          <td>{getServiceName(appointment.service)}</td>
+                          <td>
+                            <span className="garage-dashboard-table-service">
+                              {appointment.serviceName || getServiceName(appointment.service)}
+                            </span>
+                          </td>
                           <td>
                             <div className="garage-dashboard-table-datetime">
                               <span>
@@ -310,7 +1516,7 @@ const GarageDashboard = () => {
                           </td>
                           <td>
                             <div className="garage-dashboard-table-actions">
-                              {appointment.status === 'pending' && (
+                              {['pending', 'reserved'].includes(appointment.status) && (
                                 <>
                                   <button
                                     className="garage-dashboard-table-action garage-dashboard-table-action-confirm"
@@ -346,6 +1552,11 @@ const GarageDashboard = () => {
                     <div className="garage-dashboard-empty">
                       <Calendar size={48} />
                       <p>Aucun rendez-vous trouvé</p>
+                      <small>
+                        {garageAppointments.length === 0 
+                          ? 'Aucun rendez-vous dans ce garage.' 
+                          : `${garageAppointments.length} RDV total - vérifiez les filtres.`}
+                      </small>
                     </div>
                   )}
                 </CardContent>
@@ -359,52 +1570,72 @@ const GarageDashboard = () => {
                 <div className="garage-dashboard-calendar-header">
                   <button 
                     className="garage-dashboard-calendar-nav"
-                    onClick={() => navigateDate(-1)}
+                    onClick={() => navigateDate(-7)}
+                    title="Semaine précédente"
                   >
                     <ChevronLeft size={20} />
                   </button>
-                  <h3 className="garage-dashboard-calendar-title">
-                    {currentDate.toLocaleDateString('fr-FR', { 
-                      weekday: 'long', 
-                      day: 'numeric', 
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </h3>
+                  <div className="garage-dashboard-calendar-title-wrapper">
+                    <h3 className="garage-dashboard-calendar-title">
+                      Agenda Hebdomadaire
+                    </h3>
+                    <span className="garage-dashboard-calendar-subtitle">
+                      Créneaux de 30 minutes
+                    </span>
+                  </div>
                   <button 
                     className="garage-dashboard-calendar-nav"
-                    onClick={() => navigateDate(1)}
+                    onClick={() => navigateDate(7)}
+                    title="Semaine suivante"
                   >
                     <ChevronRight size={20} />
                   </button>
                 </div>
                 
-                <div className="garage-dashboard-calendar-grid">
-                  {['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', 
-                    '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', 
-                    '16:00', '16:30', '17:00', '17:30'].map((time) => {
-                    const apt = appointments.find(
-                      a => a.date === currentDate.toISOString().split('T')[0] && a.time === time
-                    );
-                    return (
-                      <div 
-                        key={time} 
-                        className={`garage-dashboard-calendar-slot ${apt ? 'has-appointment' : ''}`}
-                      >
-                        <span className="garage-dashboard-calendar-time">{time}</span>
-                        {apt && (
-                          <div className="garage-dashboard-calendar-appointment">
-                            <span className="garage-calendar-apt-service">
-                              {getServiceName(apt.service)}
-                            </span>
-                            <span className="garage-calendar-apt-client">
-                              {apt.client.firstName} {apt.client.lastName}
-                            </span>
-                          </div>
-                        )}
+                <div className="garage-dashboard-calendar-legend">
+                  <span className="garage-dashboard-calendar-chip reserved">
+                    <span className="garage-calendar-dot" style={{background: '#3b82f6'}}></span>
+                    Créneau réservé
+                  </span>
+                  <span className="garage-dashboard-calendar-chip free">
+                    <span className="garage-calendar-dot" style={{background: '#22c55e'}}></span>
+                    Créneau disponible
+                  </span>
+                </div>
+                <div className="garage-dashboard-calendar-week">
+                  {weekCalendarDays.map((day) => (
+                    <div key={day.isoDate} className="garage-dashboard-calendar-day">
+                      <div className="garage-dashboard-calendar-day-header">
+                        <strong>{day.label}</strong>
+                        <span>{day.slots.filter((slot) => slot.appointment).length} réservé(s)</span>
                       </div>
-                    );
-                  })}
+
+                      <div className="garage-dashboard-calendar-grid">
+                        {day.slots.length === 0 ? (
+                          <div className="garage-dashboard-calendar-empty-day">Garage fermé</div>
+                        ) : day.slots.map((slot) => (
+                          <div
+                            key={`${day.isoDate}-${slot.time}`}
+                            className={`garage-dashboard-calendar-slot ${
+                              slot.appointment ? 'has-appointment' : 'is-free'
+                            }`}
+                          >
+                            <span className="garage-dashboard-calendar-time">{slot.time}</span>
+                            <div className="garage-dashboard-calendar-appointment">
+                              {slot.appointment ? (
+                                <span className="garage-calendar-apt-reserved-text">Réservé</span>
+                              ) : (
+                                <>
+                                  <span className="garage-calendar-apt-service">Disponible</span>
+                                  <span className="garage-calendar-apt-client">Créneau libre</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -422,7 +1653,7 @@ const GarageDashboard = () => {
                 </div>
                 
                 <div className="garage-dashboard-clients-list">
-                  {Array.from(new Map(appointments.map(a => [a.client.email, a])).values())
+                  {Array.from(new Map(garageAppointments.map((a) => [a.client.email || a.id, a])).values())
                     .map((apt) => (
                       <div key={apt.client.email} className="garage-dashboard-client">
                         <div className="garage-dashboard-client-avatar">
@@ -438,7 +1669,7 @@ const GarageDashboard = () => {
                         </div>
                         <div className="garage-dashboard-client-stats">
                           <span>
-                            {appointments.filter(a => a.client.email === apt.client.email).length} RDV
+                            {garageAppointments.filter((a) => (apt.client.email ? a.client.email === apt.client.email : a.id === apt.id)).length} RDV
                           </span>
                         </div>
                       </div>
@@ -448,30 +1679,219 @@ const GarageDashboard = () => {
             </Card>
           )}
 
+          {activeTab === 'prestations' && (
+            <Card>
+              <CardContent>
+                <PrestationsManager token={token} garageId={garageId} />
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === 'history' && (
+            <Card>
+              <CardContent className="garage-dashboard-history">
+                <div className="garage-dashboard-history-header">
+                  <h3>Historique des interventions</h3>
+                  <p>Retrouvez l'historique des interventions effectuées sur les véhicules.</p>
+                </div>
+                <div className="garage-dashboard-history-content">
+                  {historiquesLoading ? (
+                    <div className="garage-dashboard-empty">
+                      <p>Chargement de l'historique...</p>
+                    </div>
+                  ) : historiquesError ? (
+                    <div className="garage-dashboard-empty">
+                      <p className="text-red-500">{historiquesError}</p>
+                    </div>
+                  ) : historiques.length === 0 ? (
+                    <div className="garage-dashboard-empty">
+                      <History size={48} />
+                      <p>Aucun historique d'intervention</p>
+                      <small>Les interventions terminées apparaîtront ici.</small>
+                    </div>
+                  ) : (
+                    <div className="garage-dashboard-history-list">
+                      {historiques.map((hist) => (
+                        <div key={hist.id} className="garage-dashboard-history-item">
+                          <div className="garage-dashboard-history-date">
+                            <strong>{hist.dateIntervention}</strong>
+                          </div>
+                          <div className="garage-dashboard-history-details">
+                            <p className="garage-dashboard-history-compte-rendu">{hist.compteRendu}</p>
+                            {hist.rdv?.id && (
+                              <small className="garage-dashboard-history-rdv">
+                                RDV #{hist.rdv.id}
+                              </small>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {activeTab === 'settings' && (
             <div className="garage-dashboard-settings">
+              {settingsError && <div className="garage-dashboard-settings-error">{settingsError}</div>}
+              {settingsMessage && <div className="garage-dashboard-settings-note">{settingsMessage}</div>}
+
               <Card>
                 <CardContent className="garage-dashboard-setting">
                   <div className="garage-dashboard-setting-header">
                     <h3>Informations du garage</h3>
-                    <Button variant="outline" size="sm">Modifier</Button>
+                    <Button variant="outline" size="sm" onClick={handleSaveGarageInfo} disabled={settingsLoading || settingsSaving}>
+                      {settingsSaving ? 'Modification...' : 'Modifier'}
+                    </Button>
                   </div>
-                  <div className="garage-dashboard-setting-content">
-                    <div className="garage-dashboard-setting-item">
-                      <span className="garage-dashboard-setting-label">Nom</span>
-                      <span className="garage-dashboard-setting-value">Garage Auto Pro</span>
+                  <div className="garage-dashboard-setting-form">
+                    <div className="garage-dashboard-setting-field">
+                      <label className="garage-dashboard-setting-label">Nom du garage</label>
+                      <input
+                        type="text"
+                        name="nomGarage"
+                        className="garage-dashboard-setting-input"
+                        value={garageForm.nomGarage}
+                        onChange={handleGarageFieldChange}
+                      />
                     </div>
-                    <div className="garage-dashboard-setting-item">
-                      <span className="garage-dashboard-setting-label">Adresse</span>
-                      <span className="garage-dashboard-setting-value">123 Rue de la République, 75001 Paris</span>
+                    <div className="garage-dashboard-setting-field">
+                      <label className="garage-dashboard-setting-label">Email</label>
+                      <input
+                        type="email"
+                        name="emailGarage"
+                        className="garage-dashboard-setting-input"
+                        value={garageForm.emailGarage}
+                        onChange={handleGarageFieldChange}
+                      />
                     </div>
-                    <div className="garage-dashboard-setting-item">
-                      <span className="garage-dashboard-setting-label">Téléphone</span>
-                      <span className="garage-dashboard-setting-value">01 23 45 67 89</span>
+                    <div className="garage-dashboard-setting-field">
+                      <label className="garage-dashboard-setting-label">Telephone</label>
+                      <input
+                        type="text"
+                        name="telephoneGarage"
+                        className="garage-dashboard-setting-input"
+                        value={garageForm.telephoneGarage}
+                        onChange={handleGarageFieldChange}
+                      />
                     </div>
-                    <div className="garage-dashboard-setting-item">
-                      <span className="garage-dashboard-setting-label">Email</span>
-                      <span className="garage-dashboard-setting-value">contact@garageautopro.fr</span>
+                    <div className="garage-dashboard-setting-field garage-dashboard-setting-field-full">
+                      <label className="garage-dashboard-setting-label">Ville</label>
+                      <input
+                        type="text"
+                        name="ville"
+                        className="garage-dashboard-setting-input"
+                        value={garageForm.ville}
+                        onChange={handleGarageFieldChange}
+                        onFocus={() => garageForm.ville && searchFrenchCities(garageForm.ville)}
+                        autoComplete="off"
+                        placeholder="Commencez a taper la ville"
+                      />
+                      {cityLoading && <span className="garage-dashboard-setting-hint">Recherche des villes...</span>}
+                      {citySuggestions.length > 0 && (
+                        <div className="garage-dashboard-autocomplete-list">
+                          {citySuggestions.map((suggestion) => (
+                            <button
+                              key={`${suggestion.city}-${suggestion.postcode}-${suggestion.codeInsee}`}
+                              type="button"
+                              className="garage-dashboard-autocomplete-item"
+                              onClick={() => selectCitySuggestion(suggestion)}
+                            >
+                              <span>{suggestion.label}</span>
+                              <small>Code postal: {suggestion.postcode || '-'} • INSEE: {suggestion.codeInsee || '-'}</small>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="garage-dashboard-setting-field">
+                      <label className="garage-dashboard-setting-label">Code postal</label>
+                      <input
+                        type="text"
+                        name="postalCode"
+                        className="garage-dashboard-setting-input"
+                        value={garageForm.postalCode}
+                        onChange={handleGarageFieldChange}
+                        placeholder="Rempli automatiquement via la ville"
+                      />
+                    </div>
+                    <div className="garage-dashboard-setting-field garage-dashboard-setting-field-full">
+                      <label className="garage-dashboard-setting-label">Adresse</label>
+                      <input
+                        type="text"
+                        name="adresseGarage"
+                        className="garage-dashboard-setting-input"
+                        value={garageForm.adresseGarage}
+                        onChange={handleGarageFieldChange}
+                        onFocus={() => garageForm.adresseGarage && searchFrenchAddresses(garageForm.adresseGarage, garageForm.ville, garageForm.postalCode)}
+                        autoComplete="off"
+                        placeholder="Commencez a taper l adresse"
+                      />
+                      {addressLoading && <span className="garage-dashboard-setting-hint">Recherche des adresses...</span>}
+                      {addressSuggestions.length > 0 && (
+                        <div className="garage-dashboard-autocomplete-list">
+                          {addressSuggestions.map((suggestion, index) => (
+                            <button
+                              key={`${suggestion.address}-${index}`}
+                              type="button"
+                              className="garage-dashboard-autocomplete-item"
+                              onClick={() => selectAddressSuggestion(suggestion)}
+                            >
+                              <span>{suggestion.address}</span>
+                              <small>{suggestion.city || '-'} • {suggestion.postcode || '-'}</small>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="garage-dashboard-setting">
+                  <div className="garage-dashboard-setting-header">
+                    <h3>Securite du compte</h3>
+                    <Button type="button" variant="outline" size="sm" onClick={handleSavePassword} disabled={settingsSaving}>
+                      {settingsSaving ? 'Modification...' : 'Mettre a jour'}
+                    </Button>
+                  </div>
+                  <div className="garage-dashboard-setting-form">
+                    <div className="garage-dashboard-setting-field">
+                      <label className="garage-dashboard-setting-label">Mot de passe actuel</label>
+                      <input
+                        type="password"
+                        name="currentPassword"
+                        className="garage-dashboard-setting-input"
+                        value={passwordForm.currentPassword}
+                        onChange={handlePasswordFieldChange}
+                        autoComplete="current-password"
+                      />
+                    </div>
+                    <div className="garage-dashboard-setting-field">
+                      <label className="garage-dashboard-setting-label">Nouveau mot de passe</label>
+                      <input
+                        type="password"
+                        name="newPassword"
+                        className="garage-dashboard-setting-input"
+                        value={passwordForm.newPassword}
+                        onChange={handlePasswordFieldChange}
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    <div className="garage-dashboard-setting-field garage-dashboard-setting-field-full">
+                      <label className="garage-dashboard-setting-label">Confirmer le nouveau mot de passe</label>
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        className="garage-dashboard-setting-input"
+                        value={passwordForm.confirmPassword}
+                        onChange={handlePasswordFieldChange}
+                        autoComplete="new-password"
+                      />
+                      <span className="garage-dashboard-setting-hint">
+                        Le mot de passe doit contenir au minimum 6 caracteres.
+                      </span>
                     </div>
                   </div>
                 </CardContent>
@@ -481,21 +1901,57 @@ const GarageDashboard = () => {
                 <CardContent className="garage-dashboard-setting">
                   <div className="garage-dashboard-setting-header">
                     <h3>Horaires d'ouverture</h3>
-                    <Button variant="outline" size="sm">Modifier</Button>
+                    <Button variant="outline" size="sm" onClick={handleSaveHoraires} disabled={settingsLoading || settingsSaving || !garageId}>
+                      {settingsSaving ? 'Modification...' : 'Modifier'}
+                    </Button>
                   </div>
-                  <div className="garage-dashboard-setting-content">
-                    {[
-                      { day: 'Lundi', hours: '08:00 - 18:00' },
-                      { day: 'Mardi', hours: '08:00 - 18:00' },
-                      { day: 'Mercredi', hours: '08:00 - 18:00' },
-                      { day: 'Jeudi', hours: '08:00 - 18:00' },
-                      { day: 'Vendredi', hours: '08:00 - 18:00' },
-                      { day: 'Samedi', hours: '08:00 - 12:00' },
-                      { day: 'Dimanche', hours: 'Fermé' },
-                    ].map((item) => (
-                      <div key={item.day} className="garage-dashboard-setting-item">
-                        <span className="garage-dashboard-setting-label">{item.day}</span>
-                        <span className="garage-dashboard-setting-value">{item.hours}</span>
+                  <div className="garage-dashboard-week-schedule">
+                    {(weekSchedule || []).map((day) => (
+                      <div key={day.jourId} className="garage-dashboard-week-row">
+                        <div className="garage-dashboard-week-day">
+                          <span className="garage-dashboard-setting-value">{day.libJour}</span>
+                          <select
+                            className="garage-dashboard-week-mode"
+                            value={day.mode}
+                            onChange={(e) => handleWeekDayChange(day.jourId, 'mode', e.target.value)}
+                          >
+                            <option value="open">Ouvert (avec pause midi)</option>
+                            <option value="closed">Ferme toute la journee</option>
+                            <option value="closed_morning">Ferme le matin</option>
+                            <option value="closed_afternoon">Ferme l apres-midi</option>
+                          </select>
+                        </div>
+
+                        <div className="garage-dashboard-week-times">
+                          <input
+                            type="time"
+                            className="garage-dashboard-setting-input"
+                            value={day.hreOuvreMatin}
+                            disabled={day.mode === 'closed' || day.mode === 'closed_morning'}
+                            onChange={(e) => handleWeekDayChange(day.jourId, 'hreOuvreMatin', e.target.value)}
+                          />
+                          <input
+                            type="time"
+                            className="garage-dashboard-setting-input"
+                            value={day.hreFermeMatin}
+                            disabled={day.mode === 'closed' || day.mode === 'closed_morning'}
+                            onChange={(e) => handleWeekDayChange(day.jourId, 'hreFermeMatin', e.target.value)}
+                          />
+                          <input
+                            type="time"
+                            className="garage-dashboard-setting-input"
+                            value={day.hreOuvreSoir}
+                            disabled={day.mode === 'closed' || day.mode === 'closed_afternoon'}
+                            onChange={(e) => handleWeekDayChange(day.jourId, 'hreOuvreSoir', e.target.value)}
+                          />
+                          <input
+                            type="time"
+                            className="garage-dashboard-setting-input"
+                            value={day.hreFermeSoir}
+                            disabled={day.mode === 'closed' || day.mode === 'closed_afternoon'}
+                            onChange={(e) => handleWeekDayChange(day.jourId, 'hreFermeSoir', e.target.value)}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -513,7 +1969,7 @@ const GarageDashboard = () => {
         title={`Détails du rendez-vous ${selectedAppointment?.id}`}
         size="lg"
         footer={
-          selectedAppointment?.status === 'pending' && (
+          ['pending', 'reserved'].includes(selectedAppointment?.status) && (
             <>
               <Button
                 variant="outline"
@@ -550,7 +2006,7 @@ const GarageDashboard = () => {
             <div className="garage-dashboard-modal-section">
               <h4>Véhicule</h4>
               <p><strong>Immatriculation:</strong> {selectedAppointment.vehicle.plate}</p>
-              {selectedAppointment.vehicle.brand && (
+              {typeof selectedAppointment.vehicle.brand === 'string' && selectedAppointment.vehicle.brand && (
                 <p><strong>Marque:</strong> {selectedAppointment.vehicle.brand}</p>
               )}
               {selectedAppointment.vehicle.model && (
@@ -560,7 +2016,7 @@ const GarageDashboard = () => {
             
             <div className="garage-dashboard-modal-section">
               <h4>Rendez-vous</h4>
-              <p><strong>Prestation:</strong> {getServiceName(selectedAppointment.service)}</p>
+              <p><strong>Prestation:</strong> {selectedAppointment.serviceName || getServiceName(selectedAppointment.service)}</p>
               <p><strong>Date:</strong> {new Date(selectedAppointment.date).toLocaleDateString('fr-FR')}</p>
               <p><strong>Heure:</strong> {selectedAppointment.time}</p>
               <p><strong>Statut:</strong> <StatusBadge status={selectedAppointment.status} /></p>

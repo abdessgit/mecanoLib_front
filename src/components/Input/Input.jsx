@@ -16,6 +16,15 @@ const Input = React.forwardRef(({
   icon: Icon,
   ...props
 }, ref) => {
+  const emailProps = type === 'email'
+    ? {
+        inputMode: 'email',
+        autoComplete: props.autoComplete || 'email',
+        pattern: props.pattern || '[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}',
+        title: props.title || 'Veuillez saisir une adresse email valide.',
+      }
+    : {};
+
   return (
     <div className="input-wrapper">
       {label && (
@@ -39,6 +48,7 @@ const Input = React.forwardRef(({
             error && 'input-error',
             className
           )}
+          {...emailProps}
           {...props}
         />
       </div>

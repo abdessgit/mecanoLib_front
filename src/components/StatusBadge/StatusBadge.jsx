@@ -21,6 +21,11 @@ const statusConfig = {
     icon: Clock,
     variant: 'warning',
   },
+  reserved: {
+    label: 'Réservé',
+    icon: CalendarX,
+    variant: 'primary',
+  },
   confirmed: {
     label: 'Confirmé',
     icon: CheckCircle,

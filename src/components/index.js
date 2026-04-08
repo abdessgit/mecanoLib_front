@@ -10,3 +10,4 @@ export { default as StatusBadge } from './StatusBadge/StatusBadge';
 export { default as Modal } from './Modal/Modal';
 export { default as Logo } from './Logo/Logo';
 export { default as HeroCarousel } from './HeroCarousel/HeroCarousel';
+export { default as PrestationsManager } from './PrestationsManager';

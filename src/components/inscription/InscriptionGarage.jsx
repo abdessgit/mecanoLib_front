@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { registerGarage } from "../../services/api";
+import { getFrenchAddressSuggestions, getFrenchCitySuggestions, getVilles, isValidEmailFormat, registerGarage } from "../../services/api";
 
 function RegisterGarage() {
 
@@ -21,83 +21,146 @@ function RegisterGarage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-
-    const [cpSuggestions, setCpSuggestions] = useState([]);
+    const [villes, setVilles] = useState([]);
     const [villeSuggestions, setVilleSuggestions] = useState([]);
     const [adresseSuggestions, setAdresseSuggestions] = useState([]);
+    const [cityLoading, setCityLoading] = useState(false);
+    const [addressLoading, setAddressLoading] = useState(false);
+
+    useEffect(() => {
+        const loadVilles = async () => {
+            try {
+                const villeData = await getVilles();
+                if (Array.isArray(villeData)) {
+                    setVilles(villeData);
+                }
+            } catch (err) {
+                console.error("Erreur chargement villes:", err);
+            }
+        };
+
+        loadVilles();
+    }, []);
+
+    const normalizeText = (value = "") =>
+        value
+            .toString()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim()
+            .toLowerCase();
+
+    const findMatchingVilleId = ({ cityName, postcode, codeInsee }) => {
+        const matchedVille = villes.find((ville) => {
+            const sameName = normalizeText(ville?.nom_ville) === normalizeText(cityName);
+            const samePostcode = String(ville?.code_postal || "") === String(postcode || "");
+            const sameInsee = String(ville?.code_insee || ville?.code_inssee || "") === String(codeInsee || "");
+            return sameInsee || (sameName && samePostcode) || sameName;
+        });
+
+        return matchedVille?.id_ville ? String(matchedVille.id_ville) : "";
+    };
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
-
-    /* AUTOCOMPLETE CODE POSTAL */
-
-    const searchCP = async (value) => {
-
-        setForm({ ...form, cp: value });
-
-        if (value.length < 2) return;
-
-        const res = await fetch(
-            `https://data.geopf.fr/geocodage/search/?postcode=${value}&limit=10`
-        );
-
-        const data = await res.json();
-
-        const results = data.features.map((item) => ({
-            cp: item.properties.postcode,
-            city: item.properties.city,
-            insee: item.properties.citycode
+        const { name, value } = e.target;
+        setForm((current) => ({
+            ...current,
+            [name]: value,
+            ...(name === "ville" ? { id_ville: "", code_insee: "", cp: "" } : {}),
         }));
-
-        setCpSuggestions(results);
     };
-
-    /* AUTOCOMPLETE VILLE */
 
     const searchVille = async (value) => {
+        setForm((current) => ({ ...current, ville: value, id_ville: "", code_insee: "", cp: "" }));
 
-        setForm({ ...form, ville: value });
+        if (value.trim().length < 1) {
+            setVilleSuggestions([]);
+            return;
+        }
 
-        if (value.length < 2) return;
-
-        const res = await fetch(
-            `https://data.geopf.fr/geocodage/search/?city=${value}&limit=10`
-        );
-
-        const data = await res.json();
-
-        const results = data.features.map((item) => ({
-            cp: item.properties.postcode,
-            city: item.properties.city,
-            insee: item.properties.citycode
-        }));
-
-        setVilleSuggestions(results);
+        setCityLoading(true);
+        try {
+            const results = await getFrenchCitySuggestions(value);
+            setVilleSuggestions(
+                results.map((item) => ({
+                    cp: item?.postcode || "",
+                    city: item?.city || "",
+                    insee: item?.codeInsee || "",
+                    label: item?.label || "",
+                }))
+            );
+        } catch (err) {
+            console.error("Erreur recherche ville:", err);
+            setVilleSuggestions([]);
+        } finally {
+            setCityLoading(false);
+        }
     };
 
-    /* AUTOCOMPLETE ADRESSE */
-
     const searchAdresse = async (value) => {
+        setForm((current) => ({ ...current, adresse: value }));
 
-        setForm({ ...form, adresse: value });
+        if (value.trim().length < 1) {
+            setAdresseSuggestions([]);
+            return;
+        }
 
-        if (value.length < 3) return;
+        setAddressLoading(true);
+        try {
+            const results = await getFrenchAddressSuggestions(value, {
+                city: form.ville,
+                postcode: form.cp,
+            });
 
-        const res = await fetch(
-            `https://data.geopf.fr/geocodage/search/?postcode=${form.cp}&q=${value}&limit=10`
-        );
+            setAdresseSuggestions(
+                results.map((item) => ({
+                    name: item?.address || "",
+                    cp: item?.postcode || "",
+                    city: item?.city || form.ville || "",
+                    insee: item?.codeInsee || "",
+                }))
+            );
+        } catch (err) {
+            console.error("Erreur recherche adresse:", err);
+            setAdresseSuggestions([]);
+        } finally {
+            setAddressLoading(false);
+        }
+    };
 
-        const data = await res.json();
+    const selectVille = (item) => {
+        const matchedVilleId = findMatchingVilleId({
+            cityName: item.city,
+            postcode: item.cp,
+            codeInsee: item.insee,
+        });
 
-        const results = data.features.map((item) => ({
-            name: item.properties.name,
-            cp: item.properties.postcode,
-            city: item.properties.city,
-            insee: item.properties.citycode
+        setForm((current) => ({
+            ...current,
+            ville: item.city,
+            cp: item.cp,
+            code_insee: item.insee,
+            id_ville: matchedVilleId,
         }));
+        setVilleSuggestions([]);
+    };
 
-        setAdresseSuggestions(results);
+    const selectAdresse = (item) => {
+        const matchedVilleId = findMatchingVilleId({
+            cityName: item.city,
+            postcode: item.cp,
+            codeInsee: item.insee,
+        });
+
+        setForm((current) => ({
+            ...current,
+            adresse: item.name,
+            ville: item.city || current.ville,
+            cp: item.cp || current.cp,
+            code_insee: item.insee || current.code_insee,
+            id_ville: matchedVilleId || current.id_ville,
+        }));
+        setAdresseSuggestions([]);
     };
 
     /* SUBMIT FORM */
@@ -108,8 +171,13 @@ function RegisterGarage() {
         setError("");
         setSuccess("");
 
-        if (!form.id_ville) {
-            setError("L'identifiant de la ville est requis (id_ville).");
+        if (!form.ville || !form.cp || !form.adresse) {
+            setError("Veuillez choisir une ville et une adresse via les suggestions officielles.");
+            return;
+        }
+
+        if (!isValidEmailFormat(form.email)) {
+            setError("Merci de saisir une adresse email valide.");
             return;
         }
 
@@ -123,7 +191,10 @@ function RegisterGarage() {
                 adresse: form.adresse,
                 siret: form.siret,
                 tva: form.tva,
-                id_ville: Number(form.id_ville),
+                id_ville: form.id_ville ? Number(form.id_ville) : null,
+                ville: form.ville,
+                cp: form.cp,
+                code_insee: form.code_insee,
                 mdp: form.mdp
             });
 
@@ -160,38 +231,33 @@ function RegisterGarage() {
                 <input className="form-control mb-3" placeholder="Nom du garage" name="nom_garage" onChange={handleChange} />
                 <input className="form-control mb-3" placeholder="Telephone" name="telephone" onChange={handleChange} value={form.telephone} />
                 <input className="form-control mb-3" placeholder="Email" name="email" onChange={handleChange} value={form.email} />
-                <input className="form-control mb-3" placeholder="SIRET" name="siret" onChange={handleChange} />
-                <input className="form-control mb-3" placeholder="TVA" name="tva" onChange={handleChange} />
                 <input className="form-control mb-3" placeholder="Mot de passe" type="password" name="mdp" onChange={handleChange} value={form.mdp} />
 
-                {/* ADRESSE */}
+                {/* VILLE */}
 
                 <input
                     className="form-control mt-3"
-                    placeholder="Adresse"
-                    value={form.adresse}
-                    name="adresse"
-                    onChange={(e) => searchAdresse(e.target.value)}
+                    placeholder="Ville - tapez la premiere lettre"
+                    name="ville"
+                    value={form.ville}
+                    autoComplete="off"
+                    onChange={(e) => searchVille(e.target.value)}
                 />
-
-                {adresseSuggestions.map((item, index) => (
-                    <div
-                        key={index}
-                        className="list-group-item"
-                        onClick={() => {
-                            setForm({
-                                ...form,
-                                adresse: item.name,
-                                cp: item.cp,
-                                ville: item.city,
-                                code_insee: item.insee
-                            });
-                            setAdresseSuggestions([]);
-                        }}
-                    >
-                        {item.name} - {item.cp} - {item.city}
+                {cityLoading && <div className="form-text mb-2">Recherche des villes...</div>}
+                {villeSuggestions.length > 0 && (
+                    <div className="list-group mb-3">
+                        {villeSuggestions.map((item, index) => (
+                            <button
+                                key={`${item.city}-${item.cp}-${index}`}
+                                type="button"
+                                className="list-group-item list-group-item-action"
+                                onMouseDown={() => selectVille(item)}
+                            >
+                                {item.city} - {item.cp}
+                            </button>
+                        ))}
                     </div>
-                ))}
+                )}
 
                 {/* CODE POSTAL */}
 
@@ -200,65 +266,44 @@ function RegisterGarage() {
                     placeholder="Code postal"
                     name="cp"
                     value={form.cp}
-                    onChange={(e) => searchCP(e.target.value)}
+                    readOnly
                 />
 
-                {cpSuggestions.map((item, index) => (
-                    <div
-                        key={index}
-                        className="list-group-item"
-                        onClick={() => {
-                            setForm({
-                                ...form,
-                                cp: item.cp,
-                                ville: item.city,
-                                code_insee: item.insee
-                            });
-                            setCpSuggestions([]);
-                        }}
-                    >
-                        {item.cp} - {item.city}
-                    </div>
-                ))}
-
-                {/* VILLE */}
+                {/* ADRESSE */}
 
                 <input
                     className="form-control mt-3"
-                    placeholder="Ville"
-                    name="ville"
-                    value={form.ville}
-                    onChange={(e) => searchVille(e.target.value)}
+                    placeholder="Adresse - tapez les premieres lettres"
+                    value={form.adresse}
+                    name="adresse"
+                    autoComplete="off"
+                    onChange={(e) => searchAdresse(e.target.value)}
                 />
-
-                {villeSuggestions.map((item, index) => (
-                    <div
-                        key={index}
-                        className="list-group-item"
-                        onClick={() => {
-                            setForm({
-                                ...form,
-                                ville: item.city,
-                                cp: item.cp,
-                                code_insee: item.insee
-                            });
-                            setVilleSuggestions([]);
-                        }}
-                    >
-                        {item.cp} - {item.city}
+                {addressLoading && <div className="form-text mb-2">Recherche des adresses...</div>}
+                {adresseSuggestions.length > 0 && (
+                    <div className="list-group mb-3">
+                        {adresseSuggestions.map((item, index) => (
+                            <button
+                                key={`${item.name}-${item.cp}-${index}`}
+                                type="button"
+                                className="list-group-item list-group-item-action"
+                                onMouseDown={() => selectAdresse(item)}
+                            >
+                                {item.name} - {item.cp} - {item.city}
+                            </button>
+                        ))}
                     </div>
-                ))}
+                )}
 
-                {/* INPUT HIDDEN CODE INSEE */}
+                {/* INPUTS AUTO */}
 
-                <input type="hidden" name="code_insee" value={form.code_insee} />
-                <input
-                    className="form-control mt-3"
-                    placeholder="ID Ville (requis par l'API)"
-                    name="id_ville"
-                    value={form.id_ville}
-                    onChange={handleChange}
-                />
+                <input type="hidden" name="code_insee" value={form.code_insee} readOnly />
+                <input type="hidden" name="id_ville" value={form.id_ville} readOnly />
+                {form.id_ville && (
+                    <div className="form-text text-success mt-2">
+                        Ville reconnue dans la base locale (ID: {form.id_ville}).
+                    </div>
+                )}
 
                 <button className="btn btn-primary mt-4" disabled={loading}>
                     {loading ? "Inscription..." : "Inscription"}

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../services/api";
 import { deletePrestationGarage } from "../../../services/api";
+import { deletePrestation } from "../../../services/api";
 
 const PrestationList = ({ api }) => {
   const [prestations, setPrestations] = useState([]);
@@ -17,14 +18,28 @@ const PrestationList = ({ api }) => {
   if (loading) return <div>Chargement des prestations...</div>;
   if (!prestations.length) return <div>Aucune prestation trouvée.</div>;
 
-  const handleDelete = (id) => {
+  const handleDelete = (garageId, prestationId) => {
+    if (!prestationId) return;
     setLoading(true);
-    // Il faut probablement fournir aussi garageId ici, à adapter selon la structure de tes données !
-    // Si tu as besoin de l'id du garage, il faut le passer en paramètre.
-    // Exemple : deletePrestationGarage(token, garageId, id)
-    // Ici, je laisse comme deletePrestationGarage(token, id) pour garder la logique actuelle, mais à ajuster si besoin.
-    deletePrestationGarage(token, id)
-      .then(() => setPrestations((prev) => prev.filter((p) => p.idPrestation !== id)))
+    const deleteAction = garageId
+      ? deletePrestationGarage(token, garageId, prestationId)
+      : deletePrestation(token, prestationId)
+
+    deleteAction
+      .then(() => {
+        setPrestations((prev) =>
+          prev.filter((p) => {
+            const pGarageId = p.id_garage || p.idGarage || p.garage?.idGarage || p.garage?.id
+            const pPrestationId = p.id_prestation || p.idPrestation || p.id
+
+            if (!garageId) {
+              return String(pPrestationId) !== String(prestationId)
+            }
+
+            return !(String(pGarageId) === String(garageId) && String(pPrestationId) === String(prestationId))
+          })
+        )
+      })
       .finally(() => setLoading(false));
   };
 
@@ -49,7 +64,13 @@ const PrestationList = ({ api }) => {
               <td>{p.descriptionPrestation || p.description}</td>
               <td>{p.categorie?.nomCategorie || p.categorie}</td>
               <td>
-                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p.idPrestation || p.id)}>Supprimer</button>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => handleDelete(p.id_garage || p.idGarage || p.garage?.idGarage || p.garage?.id, p.id_prestation || p.idPrestation || p.id)}
+                  disabled={!(p.id_prestation || p.idPrestation || p.id)}
+                >
+                  Supprimer
+                </button>
               </td>
             </tr>
           ))}

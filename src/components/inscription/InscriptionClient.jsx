@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { registerClient } from "../../services/api"
+import { isValidEmailFormat, registerClient } from "../../services/api"
 
 function InscriptionClient() {
     const [form, setForm] = useState({
@@ -7,6 +7,10 @@ function InscriptionClient() {
         nom: "",
         telephone: "",
         email: "",
+        ville: "",
+        codePostal: "",
+        adresse: "",
+        codeInsee: "",
         password: "",
         confirmPassword: "",
         consentement: false,
@@ -33,6 +37,11 @@ function InscriptionClient() {
             return
         }
 
+        if (!isValidEmailFormat(form.email)) {
+            setError("Merci de saisir une adresse email valide.")
+            return
+        }
+
         setLoading(true)
         try {
             await registerClient({
@@ -41,6 +50,10 @@ function InscriptionClient() {
                 email: form.email,
                 mdp: form.password,
                 tel: form.telephone,
+                ville: form.ville,
+                cp: form.codePostal,
+                adresse: form.adresse,
+                code_insee: form.codeInsee,
                 consentement: form.consentement,
             })
             setSuccess("Compte client créé avec succès. Vous pouvez maintenant vous connecter.")
@@ -49,6 +62,10 @@ function InscriptionClient() {
                 nom: "",
                 telephone: "",
                 email: "",
+                ville: "",
+                codePostal: "",
+                adresse: "",
+                codeInsee: "",
                 password: "",
                 confirmPassword: "",
                 consentement: false,
@@ -134,6 +151,59 @@ function InscriptionClient() {
                                 value={form.email}
                                 onChange={handleChange}
                                 required
+                            />
+                        </div>
+
+                        <div className="col-md-6">
+                            <label className="form-label fw-semibold" htmlFor="ville">
+                                Ville
+                            </label>
+                            <input
+                                id="ville"
+                                name="ville"
+                                className="form-control"
+                                value={form.ville}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+
+                        <div className="col-md-6">
+                            <label className="form-label fw-semibold" htmlFor="codePostal">
+                                Code postal
+                            </label>
+                            <input
+                                id="codePostal"
+                                name="codePostal"
+                                className="form-control"
+                                value={form.codePostal}
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <div className="col-12">
+                            <label className="form-label fw-semibold" htmlFor="adresse">
+                                Adresse
+                            </label>
+                            <input
+                                id="adresse"
+                                name="adresse"
+                                className="form-control"
+                                value={form.adresse}
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <div className="col-md-6">
+                            <label className="form-label fw-semibold" htmlFor="codeInsee">
+                                Code INSEE
+                            </label>
+                            <input
+                                id="codeInsee"
+                                name="codeInsee"
+                                className="form-control"
+                                value={form.codeInsee}
+                                onChange={handleChange}
                             />
                         </div>
 

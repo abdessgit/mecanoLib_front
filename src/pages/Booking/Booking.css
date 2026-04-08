@@ -43,9 +43,10 @@
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   background: white;
-  border-radius: 9999px;
+  border-radius: 1rem;
   border: 2px solid #e5e7eb;
   transition: all 0.3s ease;
+  max-width: 220px;
 }
 
 .booking-progress-step.active {
@@ -84,6 +85,8 @@
   font-size: 0.875rem;
   font-weight: 500;
   color: #6b7280;
+  white-space: normal;
+  line-height: 1.2;
 }
 
 .booking-progress-step.active .booking-progress-label {
@@ -135,11 +138,70 @@
   margin-bottom: 1rem;
 }
 
+.booking-auth-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+}
+
+.booking-auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.booking-auth-title {
+  margin-bottom: 0;
+}
+
+.booking-auth-text {
+  margin-bottom: 0;
+}
+
+.booking-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.booking-auth-button {
+  min-width: 180px;
+}
+
+.booking-auth-note {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
 .booking-step-group-title {
   font-size: 0.95rem;
   font-weight: 600;
   color: #1f2937;
   margin-bottom: 0.75rem;
+}
+
+.booking-selection-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.booking-selection-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .booking-category-layout {
@@ -223,15 +285,19 @@
 }
 
 .booking-prestation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
-  text-align: left;
-  padding: 0.65rem 0.8rem;
+  padding: 0.85rem 0.9rem;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 0.65rem;
   color: #374151;
-  cursor: pointer;
   transition: all 0.2s ease;
+  cursor: pointer;
+  text-align: left;
 }
 
 .booking-prestation-item:hover {
@@ -243,6 +309,61 @@
   border-color: #3b82f6;
   background: #eff6ff;
   color: #1d4ed8;
+}
+
+.booking-prestation-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.booking-prestation-check {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.booking-prestation-item-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 9999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.booking-prestation-choose-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.booking-selection-confirm {
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.75rem;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.booking-selection-confirm p {
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.booking-selection-helper {
+  font-size: 0.85rem;
+  color: #1d4ed8;
+  opacity: 0.9;
 }
 
 /* Categories */
@@ -464,6 +585,12 @@
   gap: 0.75rem;
   margin-top: 0.5rem;
   flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.booking-garage-autocomplete {
+  flex: 1;
+  min-width: 220px;
 }
 
 .booking-garage-input {
@@ -480,6 +607,73 @@
 
 .booking-garage-input:focus {
   border-color: #3b82f6;
+}
+
+.booking-garage-help {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.booking-garage-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  padding: 0.35rem;
+  background: #fff;
+  border: 1px solid #dbe3ea;
+  border-radius: 0.75rem;
+}
+
+.booking-garage-suggestion {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  color: #0f172a;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.booking-garage-suggestion:hover {
+  background: #eff6ff;
+}
+
+.booking-garage-suggestion-title {
+  font-weight: 600;
+}
+
+.booking-garage-suggestion-meta {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.booking-city-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.booking-city-meta-card {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #dbeafe;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: #0f172a;
+}
+
+.booking-city-meta-label {
+  font-size: 0.78rem;
+  color: #64748b;
 }
 
 .booking-garage-search-btn {

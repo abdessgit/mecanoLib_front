@@ -1,37 +1,52 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Eye, EyeOff, Calendar, Clock, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button, Input, Card, CardContent } from '../../components';
-import { useApp } from '../../context/AppContext';
+import { clearStoredAuth, getStoredAuth, isJwtExpired, loginUser } from '../../services/api';
 import './ClientLogin.css';
 
 const ClientLogin = () => {
   const navigate = useNavigate();
-  const { clientAuth, loginClient } = useApp();
+  const location = useLocation();
+  const { token, role } = getStoredAuth();
+  const redirectTo = location.state?.redirectTo || '/client/dashboard';
+  const restoreBooking = location.state?.restoreBooking;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
-  if (clientAuth.isAuthenticated) {
-    navigate('/client/dashboard');
-    return null;
+  if (token && !isJwtExpired(token) && role === 'client') {
+    return <Navigate to={redirectTo} replace state={restoreBooking ? { restoreBooking } : undefined} />;
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const result = loginClient({ email, password });
-    if (result.success) {
-      navigate('/client/dashboard');
-      return;
+    try {
+      const result = await loginUser({
+        email,
+        password,
+        remember: rememberMe,
+      });
+
+      if (result.role !== 'client') {
+        clearStoredAuth();
+        throw new Error('Cet espace est reserve aux comptes client.');
+      }
+
+      navigate(redirectTo, {
+        state: restoreBooking ? { restoreBooking } : undefined,
+      });
+    } catch (err) {
+      setError(err.message || 'Identifiants incorrects.');
+    } finally {
+      setIsLoading(false);
     }
-    setError(result.message);
-    setIsLoading(false);
   };
 
   return (
@@ -130,6 +145,13 @@ const ClientLogin = () => {
 
                 <div className="client-login-forgot">
                   <a href="#">Mot de passe oublié ?</a>
+                </div>
+
+                <div className="client-login-options">
+                  <label className="client-login-remember">
+                    <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                    <span>Se souvenir de moi</span>
+                  </label>
                 </div>
 
                 {error && (

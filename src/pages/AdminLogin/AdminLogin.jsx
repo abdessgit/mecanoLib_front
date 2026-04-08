@@ -1,31 +1,47 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '../../components';
+import { clearStoredAuth, getStoredAuth, isJwtExpired, loginUser } from '../../services/api';
 import './AdminLogin.css';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const { token, role } = getStoredAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  if (token && !isJwtExpired(token) && role === 'superadmin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Identifiants super admin (à remplacer par une vraie auth)
-    if (email === 'admin@mecanolib.fr' && password === 'Admin@2026') {
+    try {
+      const result = await loginUser({
+        email,
+        password,
+        remember: true,
+      });
+
+      if (result.role !== 'superadmin') {
+        clearStoredAuth();
+        throw new Error('Cet espace est réservé aux comptes super administrateur.');
+      }
+
       navigate('/admin/dashboard');
-    } else {
-      setError('Identifiants incorrects.');
+    } catch (err) {
+      setError(err.message || 'Identifiants incorrects.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -101,9 +117,6 @@ const AdminLogin = () => {
           </CardContent>
         </Card>
 
-        <p className="admin-login-back">
-          <a href="/">← Retour au site</a>
-        </p>
       </motion.div>
     </div>
   );

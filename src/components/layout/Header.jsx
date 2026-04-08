@@ -13,7 +13,7 @@ function Header() {
 
     const handleLogout = () => {
         clearStoredAuth()
-        navigate("/connexion")
+        navigate("/client")
     }
 
     return (
@@ -77,7 +77,7 @@ function Header() {
                         </>
                     ) : (
                         <li className="nav-item ms-lg-2">
-                            <Link className="btn btn-warning btn-sm fw-bold px-3" to="/connexion" state={{ from: location.pathname }}>
+                            <Link className="btn btn-warning btn-sm fw-bold px-3" to="/client" state={{ from: location.pathname }}>
                                 Se connecter
                             </Link>
                         </li>

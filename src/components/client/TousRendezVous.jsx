@@ -1,6 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import { getStoredAuth, getProfile, getClientRendezVous } from '../../services/api';
 
+// Fonction pour traduire les statuts en français
+const getStatusLabel = (status) => {
+  const statusMap = {
+    'pending': 'En attente',
+    'reserved': 'Réservé',
+    'confirmed': 'Confirmé',
+    'refused': 'Refusé',
+    'cancelled_client': 'Annulé client',
+    'cancelled_garage': 'Annulé garage',
+    'completed': 'Terminé',
+    'no_show': 'No-show',
+  };
+  
+  if (!status) return '-';
+  
+  const normalizedStatus = String(status).toLowerCase().trim();
+  return statusMap[normalizedStatus] || status;
+};
+
+// Fonction pour obtenir la couleur du badge selon le statut
+const getStatusBadgeClass = (status) => {
+  const normalizedStatus = String(status).toLowerCase().trim();
+  
+  switch (normalizedStatus) {
+    case 'pending':
+    case 'reserved':
+      return 'badge bg-warning text-dark';
+    case 'confirmed':
+      return 'badge bg-success';
+    case 'completed':
+      return 'badge bg-primary';
+    case 'refused':
+    case 'cancelled_client':
+    case 'cancelled_garage':
+      return 'badge bg-danger';
+    default:
+      return 'badge bg-secondary';
+  }
+};
+
 
 const TousRendezVous = () => {
   const [rdvs, setRdvs] = useState([]);
@@ -53,7 +93,11 @@ const TousRendezVous = () => {
               <td>{rdv.heure || rdv.heure_rdv || "-"}</td>
               <td>{rdv.garage?.nom_garage || rdv.garage_name || rdv.garage || "-"}</td>
               <td>{rdv.motif || rdv.service || rdv.prestation || "-"}</td>
-              <td>{rdv.status || rdv.etat || "-"}</td>
+              <td>
+                <span className={getStatusBadgeClass(rdv.status || rdv.etat)}>
+                  {getStatusLabel(rdv.status || rdv.etat)}
+                </span>
+              </td>
             </tr>
           ))}
         </tbody>

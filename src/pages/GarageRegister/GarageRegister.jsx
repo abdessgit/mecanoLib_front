@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Building2,
@@ -17,27 +17,17 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button, Input, Card, CardContent } from '../../components';
+import {
+  calculateFrenchVatNumber,
+  getFrenchAddressSuggestions,
+  getFrenchCitySuggestions,
+  getVilles,
+  isValidEmailFormat,
+  isValidPhoneFormat,
+  lookupFrenchBusinessBySiretOrSiren,
+  registerGarage,
+} from '../../services/api';
 import './GarageRegister.css';
-
-const serviceOptions = [
-  'Entretien & revision',
-  'Freinage',
-  'Pneumatiques',
-  'Diagnostic electronique',
-  'Climatisation',
-  'Carrosserie',
-  'Vehicules hybrides',
-  'Vehicules electriques',
-];
-
-const featureOptions = [
-  'Vehicule de courtoisie',
-  'Prise en charge express',
-  'Paiement en plusieurs fois',
-  'Depannage',
-  'Salle d attente',
-  'Equipe multimarque',
-];
 
 const initialForm = {
   garageName: '',
@@ -52,6 +42,10 @@ const initialForm = {
   bays: '',
   brands: '',
   siren: '',
+  tva: '',
+  mdp: '',
+  id_ville: '',
+  code_insee: '',
   services: [],
   features: [],
   message: '',
@@ -63,14 +57,207 @@ const GarageRegister = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [villes, setVilles] = useState([]);
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [cityLoading, setCityLoading] = useState(false);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [companyLookupLoading, setCompanyLookupLoading] = useState(false);
+  const [companyLookupMessage, setCompanyLookupMessage] = useState('');
 
-  const handleChange = (event) => {
-    const { name, value, type, checked } = event.target;
+  useEffect(() => {
+    loadVilles();
+  }, []);
+
+  const normalizeText = (value = '') => value
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+  const findMatchingVilleId = ({ cityName, postcode, codeInsee }) => {
+    const matchedVille = villes.find((ville) => {
+      const sameName = normalizeText(ville?.nom_ville) === normalizeText(cityName);
+      const samePostcode = String(ville?.code_postal || '') === String(postcode || '');
+      const sameInsee = String(ville?.code_insee || ville?.code_inssee || '') === String(codeInsee || '');
+      return sameInsee || (sameName && samePostcode) || sameName;
+    });
+
+    return matchedVille?.id_ville ? String(matchedVille.id_ville) : '';
+  };
+
+  const loadVilles = async () => {
+    try {
+      const villeData = await getVilles();
+      if (Array.isArray(villeData)) {
+        setVilles(villeData);
+      }
+    } catch (error) {
+      console.error('Error loading villes:', error);
+    }
+  };
+
+  const searchFrenchCities = async (value) => {
+    if (!value.trim()) {
+      setCitySuggestions([]);
+      return;
+    }
+
+    setCityLoading(true);
+    try {
+      const suggestions = await getFrenchCitySuggestions(value);
+      setCitySuggestions(suggestions);
+    } catch (error) {
+      console.error('Erreur recherche ville:', error);
+      setCitySuggestions([]);
+    } finally {
+      setCityLoading(false);
+    }
+  };
+
+  const searchFrenchAddresses = async (value, city = formData.city, postcode = formData.postalCode) => {
+    if (!value.trim()) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    setAddressLoading(true);
+    try {
+      const suggestions = await getFrenchAddressSuggestions(value, { city, postcode });
+      setAddressSuggestions(suggestions);
+    } catch (error) {
+      console.error('Erreur recherche adresse:', error);
+      setAddressSuggestions([]);
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  const selectCitySuggestion = (suggestion) => {
+    const matchedVilleId = findMatchingVilleId({
+      cityName: suggestion.city,
+      postcode: suggestion.postcode,
+      codeInsee: suggestion.codeInsee,
+    });
 
     setFormData((current) => ({
       ...current,
-      [name]: type === 'checkbox' ? checked : value,
+      city: suggestion.city,
+      postalCode: suggestion.postcode,
+      code_insee: suggestion.codeInsee,
+      id_ville: matchedVilleId,
     }));
+    setCitySuggestions([]);
+    setErrors((current) => ({
+      ...current,
+      city: '',
+      id_ville: '',
+      postalCode: '',
+    }));
+  };
+
+  const selectAddressSuggestion = (suggestion) => {
+    const matchedVilleId = findMatchingVilleId({
+      cityName: suggestion.city,
+      postcode: suggestion.postcode,
+      codeInsee: suggestion.codeInsee,
+    });
+
+    setFormData((current) => ({
+      ...current,
+      address: suggestion.address,
+      city: suggestion.city || current.city,
+      postalCode: suggestion.postcode || current.postalCode,
+      code_insee: suggestion.codeInsee || current.code_insee,
+      id_ville: matchedVilleId || current.id_ville,
+    }));
+    setAddressSuggestions([]);
+    setErrors((current) => ({
+      ...current,
+      address: '',
+      city: '',
+      id_ville: '',
+    }));
+  };
+
+  const handleSirenLookup = async () => {
+    const digits = String(formData.siren || '').replace(/\D+/g, '');
+
+    if (!digits) {
+      setCompanyLookupMessage('');
+      setFormData((current) => ({ ...current, tva: '' }));
+      return;
+    }
+
+    if (![9, 14].includes(digits.length)) {
+      setCompanyLookupMessage('Saisissez un SIREN (9 chiffres) ou un SIRET (14 chiffres).');
+      return;
+    }
+
+    setCompanyLookupLoading(true);
+    setCompanyLookupMessage('Verification du SIREN / SIRET...');
+
+    try {
+      const company = await lookupFrenchBusinessBySiretOrSiren(digits);
+      const matchedVilleId = findMatchingVilleId({
+        cityName: company?.city,
+        postcode: company?.postalCode,
+        codeInsee: company?.codeInsee,
+      });
+
+      setFormData((current) => ({
+        ...current,
+        tva: company?.tva || calculateFrenchVatNumber(digits) || current.tva,
+        garageName: current.garageName || company?.name || current.garageName,
+        address: current.address || company?.address || current.address,
+        city: current.city || company?.city || current.city,
+        postalCode: current.postalCode || company?.postalCode || current.postalCode,
+        code_insee: current.code_insee || company?.codeInsee || current.code_insee,
+        id_ville: current.id_ville || matchedVilleId || current.id_ville,
+      }));
+
+      setCompanyLookupMessage(
+        company?.found
+          ? 'Informations du garage et TVA recuperees automatiquement.'
+          : 'TVA calculee automatiquement. Completez les autres informations si besoin.'
+      );
+      setErrors((current) => ({ ...current, siren: '' }));
+    } catch (error) {
+      const fallbackTva = calculateFrenchVatNumber(digits);
+      setFormData((current) => ({
+        ...current,
+        tva: fallbackTva || current.tva,
+      }));
+      setCompanyLookupMessage(
+        fallbackTva
+          ? 'TVA calculee automatiquement. La verification API est indisponible pour le moment.'
+          : (error.message || 'Impossible de verifier ce SIREN / SIRET pour le moment.')
+      );
+    } finally {
+      setCompanyLookupLoading(false);
+    }
+  };
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    const nextValue = type === 'checkbox'
+      ? checked
+      : name === 'phone'
+        ? value.replace(/[^\d+().\s-]/g, '')
+        : value;
+
+    setFormData((current) => ({
+      ...current,
+      [name]: nextValue,
+      ...(name === 'city' ? { id_ville: '', code_insee: '', postalCode: '' } : {}),
+      ...(name === 'siren' ? { tva: calculateFrenchVatNumber(nextValue) || '' } : {}),
+    }));
+
+    if (name === 'siren') {
+      setCompanyLookupMessage('');
+    }
 
     setErrors((current) => ({
       ...current,
@@ -78,39 +265,19 @@ const GarageRegister = () => {
     }));
   };
 
-  const toggleArrayValue = (field, value) => {
-    setFormData((current) => {
-      const currentValues = current[field];
-      const nextValues = currentValues.includes(value)
-        ? currentValues.filter((item) => item !== value)
-        : [...currentValues, value];
-
-      return {
-        ...current,
-        [field]: nextValues,
-      };
-    });
-
-    setErrors((current) => ({
-      ...current,
-      [field]: '',
-    }));
-  };
-
   const validateForm = () => {
     const nextErrors = {};
 
     if (!formData.garageName.trim()) nextErrors.garageName = 'Le nom du garage est requis.';
-    if (!formData.managerName.trim()) nextErrors.managerName = 'Le nom du responsable est requis.';
     if (!formData.email.trim()) nextErrors.email = 'L email est requis.';
+    else if (!isValidEmailFormat(formData.email)) nextErrors.email = 'Veuillez saisir une adresse email valide.';
     if (!formData.phone.trim()) nextErrors.phone = 'Le telephone est requis.';
-    if (!formData.city.trim()) nextErrors.city = 'La ville est requise.';
-    if (!formData.address.trim()) nextErrors.address = 'L adresse est requise.';
+    else if (!isValidPhoneFormat(formData.phone)) nextErrors.phone = 'Veuillez saisir un numero de telephone valide (ex: 06 12 34 56 78).';
+    if (!formData.city.trim()) nextErrors.city = 'Choisissez une ville via les suggestions.';
     if (!formData.postalCode.trim()) nextErrors.postalCode = 'Le code postal est requis.';
-    if (!formData.employees) nextErrors.employees = 'Selectionnez la taille de votre equipe.';
-    if (!formData.bays) nextErrors.bays = 'Indiquez le nombre de postes atelier.';
-    if (formData.services.length === 0) nextErrors.services = 'Choisissez au moins une specialite.';
-    if (!formData.acceptTerms) nextErrors.acceptTerms = 'Vous devez accepter les conditions.';
+    if (!formData.address.trim()) nextErrors.address = 'L adresse est requise.';
+    if (formData.siren.trim() && !calculateFrenchVatNumber(formData.siren)) nextErrors.siren = 'Le SIREN / SIRET doit contenir 9 ou 14 chiffres valides.';
+    if (!formData.mdp.trim() || formData.mdp.length < 6) nextErrors.mdp = 'Le mot de passe doit contenir au minimum 6 caracteres.';
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -124,9 +291,35 @@ const GarageRegister = () => {
     }
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1400));
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+    try {
+      await registerGarage({
+        nom_garage: formData.garageName,
+        email: formData.email,
+        telephone: formData.phone,
+        adresse: formData.address,
+        siret: formData.siren || '',
+        tva: formData.tva || calculateFrenchVatNumber(formData.siren) || '',
+        id_ville: formData.id_ville ? Number(formData.id_ville) : null,
+        ville: formData.city,
+        cp: formData.postalCode,
+        code_insee: formData.code_insee,
+        mdp: formData.mdp
+      });
+
+      setSuccessMessage(`Garage "${formData.garageName}" inscrit avec succes!`);
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setFormData(initialForm);
+        setErrors({});
+        setIsSubmitted(false);
+      }, 3000);
+    } catch (err) {
+      setIsSubmitting(false);
+      setErrors({ submit: err.message || 'Erreur lors de l inscription' });
+    }
   };
 
   if (isSubmitted) {
@@ -144,7 +337,7 @@ const GarageRegister = () => {
             </div>
             <h1>Votre demande a bien ete envoyee</h1>
             <p>
-              Notre equipe partenaires va etudier votre dossier et vous recontacter sous 24 a 48 heures.
+              {successMessage || 'Notre equipe partenaires va etudier votre dossier et vous recontacter sous 24 a 48 heures.'}
             </p>
             <div className="garage-register-success-summary">
               <div>
@@ -245,16 +438,29 @@ const GarageRegister = () => {
             <CardContent className="garage-register-card-content">
               <div className="garage-register-card-header">
                 <span className="garage-register-kicker">Inscription partenaire</span>
-                <h2>Parlez-nous de votre garage</h2>
+                <h2>Inscription garage</h2>
                 <p>
-                  Remplissez ce formulaire pour que notre equipe puisse evaluer votre inscription et configurer votre futur espace garage.
+                  Remplissez uniquement les informations necessaires a l enregistrement en base.
                 </p>
               </div>
 
               <form className="garage-register-form" onSubmit={handleSubmit}>
+                {errors.submit && (
+                  <div style={{
+                    padding: '12px',
+                    marginBottom: '20px',
+                    backgroundColor: '#fee',
+                    color: '#c00',
+                    border: '1px solid #fcc',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}>
+                    {errors.submit}
+                  </div>
+                )}
                 <section className="garage-register-section">
-                  <h3>Informations principales</h3>
-                  <div className="garage-register-grid garage-register-grid-2">
+                  <h3>Informations du garage</h3>
+                  <div className="garage-register-grid garage-register-grid-compact">
                     <Input
                       label="Nom du garage"
                       name="garageName"
@@ -263,16 +469,6 @@ const GarageRegister = () => {
                       placeholder="Garage du Centre"
                       icon={Building2}
                       error={errors.garageName}
-                      required
-                    />
-                    <Input
-                      label="Responsable"
-                      name="managerName"
-                      value={formData.managerName}
-                      onChange={handleChange}
-                      placeholder="Ali Ben Salem"
-                      icon={User}
-                      error={errors.managerName}
                       required
                     />
                     <Input
@@ -289,45 +485,98 @@ const GarageRegister = () => {
                     <Input
                       label="Telephone"
                       name="phone"
+                      type="tel"
                       value={formData.phone}
                       onChange={handleChange}
                       placeholder="06 12 34 56 78"
                       icon={Phone}
                       error={errors.phone}
+                      helperText="Format attendu : 06 12 34 56 78"
+                      autoComplete="tel"
+                      inputMode="tel"
                       required
-                    />
-                    <Input
-                      label="Site web"
-                      name="website"
-                      value={formData.website}
-                      onChange={handleChange}
-                      placeholder="https://www.mon-garage.fr"
-                      icon={Globe}
                     />
                     <Input
                       label="SIREN / SIRET"
                       name="siren"
                       value={formData.siren}
                       onChange={handleChange}
+                      onBlur={handleSirenLookup}
                       placeholder="123 456 789 00012"
                       icon={FileText}
+                      error={errors.siren}
+                      helperText="Renseignez un SIREN ou SIRET pour recuperer automatiquement le garage et calculer la TVA."
+                    />
+                    <Input
+                      label="TVA intracommunautaire"
+                      name="tva"
+                      value={formData.tva}
+                      onChange={handleChange}
+                      placeholder="FRxx123456789"
+                      icon={FileText}
+                      helperText="Calculee automatiquement a partir du SIREN / SIRET"
+                      readOnly
+                    />
+                    <Input
+                      label="Mot de passe"
+                      name="mdp"
+                      type="password"
+                      value={formData.mdp}
+                      onChange={handleChange}
+                      placeholder="Minimum 6 caracteres"
+                      error={errors.mdp}
+                      required
                     />
                   </div>
+                  {companyLookupLoading && (
+                    <div className="garage-register-suggestion-hint">Verification du SIREN / SIRET...</div>
+                  )}
+                  {!companyLookupLoading && companyLookupMessage && (
+                    <div className="garage-register-suggestion-hint">{companyLookupMessage}</div>
+                  )}
                 </section>
 
                 <section className="garage-register-section">
-                  <h3>Localisation et capacite</h3>
-                  <div className="garage-register-grid garage-register-grid-2">
-                    <Input
-                      label="Ville"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      placeholder="Lyon"
-                      icon={MapPin}
-                      error={errors.city}
-                      required
-                    />
+                  <h3>Adresse du garage</h3>
+                  <div className="garage-register-grid garage-register-grid-compact">
+                    <div className="garage-register-autocomplete">
+                      <Input
+                        label="Ville"
+                        name="city"
+                        value={formData.city}
+                        onChange={(event) => {
+                          handleChange(event);
+                          searchFrenchCities(event.target.value);
+                        }}
+                        onFocus={() => {
+                          if (formData.city.trim()) {
+                            searchFrenchCities(formData.city);
+                          }
+                        }}
+                        placeholder="Tapez la premiere lettre : Lyon"
+                        icon={MapPin}
+                        error={errors.city || errors.id_ville}
+                        helperText="Suggestions officielles via l API adresse.data.gouv.fr"
+                        autoComplete="off"
+                        required
+                      />
+                      {cityLoading && <div className="garage-register-suggestion-hint">Recherche des villes...</div>}
+                      {!cityLoading && citySuggestions.length > 0 && (
+                        <div className="garage-register-suggestions">
+                          {citySuggestions.map((suggestion) => (
+                            <button
+                              key={`${suggestion.city}-${suggestion.postcode}-${suggestion.codeInsee}`}
+                              type="button"
+                              className="garage-register-suggestion"
+                              onMouseDown={() => selectCitySuggestion(suggestion)}
+                            >
+                              <strong>{suggestion.city}</strong>
+                              <span>{suggestion.postcode} · INSEE {suggestion.codeInsee}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <Input
                       label="Code postal"
                       name="postalCode"
@@ -335,129 +584,53 @@ const GarageRegister = () => {
                       onChange={handleChange}
                       placeholder="69007"
                       error={errors.postalCode}
+                      helperText="Renseigne automatiquement apres le choix de la ville"
+                      disabled
+                    />
+                  </div>
+                  <div className="garage-register-autocomplete">
+                    <Input
+                      label="Adresse complete"
+                      name="address"
+                      value={formData.address}
+                      onChange={(event) => {
+                        handleChange(event);
+                        searchFrenchAddresses(event.target.value, formData.city, formData.postalCode);
+                      }}
+                      onFocus={() => {
+                        if (formData.address.trim()) {
+                          searchFrenchAddresses(formData.address, formData.city, formData.postalCode);
+                        }
+                      }}
+                      placeholder="Tapez les premieres lettres : rue Victor Hugo"
+                      icon={MapPin}
+                      error={errors.address}
+                      helperText="Suggestions d adresse officielles en France"
+                      autoComplete="off"
                       required
                     />
+                    {addressLoading && <div className="garage-register-suggestion-hint">Recherche des adresses...</div>}
+                    {!addressLoading && addressSuggestions.length > 0 && (
+                      <div className="garage-register-suggestions">
+                        {addressSuggestions.map((suggestion, index) => (
+                          <button
+                            key={`${suggestion.address}-${suggestion.postcode}-${index}`}
+                            type="button"
+                            className="garage-register-suggestion"
+                            onMouseDown={() => selectAddressSuggestion(suggestion)}
+                          >
+                            <strong>{suggestion.address}</strong>
+                            <span>{suggestion.postcode} · {suggestion.city}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <Input
-                    label="Adresse complete"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    placeholder="15 rue des Freres Lumiere"
-                    icon={MapPin}
-                    error={errors.address}
-                    required
-                  />
 
-                  <div className="garage-register-grid garage-register-grid-2">
-                    <label className="garage-register-field">
-                      <span className="garage-register-field-label">Taille de l equipe *</span>
-                      <select
-                        name="employees"
-                        value={formData.employees}
-                        onChange={handleChange}
-                        className={`garage-register-select ${errors.employees ? 'garage-register-select-error' : ''}`}
-                      >
-                        <option value="">Selectionnez</option>
-                        <option value="1-3">1 a 3 techniciens</option>
-                        <option value="4-8">4 a 8 techniciens</option>
-                        <option value="9-15">9 a 15 techniciens</option>
-                        <option value="15+">Plus de 15 techniciens</option>
-                      </select>
-                      {errors.employees && <p className="garage-register-error-text">{errors.employees}</p>}
-                    </label>
-
-                    <label className="garage-register-field">
-                      <span className="garage-register-field-label">Postes atelier *</span>
-                      <select
-                        name="bays"
-                        value={formData.bays}
-                        onChange={handleChange}
-                        className={`garage-register-select ${errors.bays ? 'garage-register-select-error' : ''}`}
-                      >
-                        <option value="">Selectionnez</option>
-                        <option value="1-2">1 a 2 postes</option>
-                        <option value="3-5">3 a 5 postes</option>
-                        <option value="6-10">6 a 10 postes</option>
-                        <option value="10+">Plus de 10 postes</option>
-                      </select>
-                      {errors.bays && <p className="garage-register-error-text">{errors.bays}</p>}
-                    </label>
-                  </div>
                 </section>
 
-                <section className="garage-register-section">
-                  <h3>Expertise atelier</h3>
-                  <p className="garage-register-section-description">Selectionnez vos specialites principales.</p>
-                  <div className="garage-register-chip-grid">
-                    {serviceOptions.map((service) => (
-                      <button
-                        key={service}
-                        type="button"
-                        className={`garage-register-chip ${formData.services.includes(service) ? 'garage-register-chip-active' : ''}`}
-                        onClick={() => toggleArrayValue('services', service)}
-                      >
-                        {service}
-                      </button>
-                    ))}
-                  </div>
-                  {errors.services && <p className="garage-register-error-text">{errors.services}</p>}
-
-                  <Input
-                    label="Marques et vehicules pris en charge"
-                    name="brands"
-                    value={formData.brands}
-                    onChange={handleChange}
-                    placeholder="Renault, Peugeot, Citroen, utilitaires, vehicules premium..."
-                    icon={Car}
-                  />
-                </section>
-
-                <section className="garage-register-section">
-                  <h3>Services complementaires</h3>
-                  <p className="garage-register-section-description">Mettez en avant ce qui vous distingue des autres garages.</p>
-                  <div className="garage-register-chip-grid garage-register-chip-grid-features">
-                    {featureOptions.map((feature) => (
-                      <button
-                        key={feature}
-                        type="button"
-                        className={`garage-register-chip garage-register-chip-soft ${formData.features.includes(feature) ? 'garage-register-chip-active-soft' : ''}`}
-                        onClick={() => toggleArrayValue('features', feature)}
-                      >
-                        {feature}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="garage-register-section">
-                  <h3>Presentation libre</h3>
-                  <label className="garage-register-field">
-                    <span className="garage-register-field-label">Parlez-nous de votre garage</span>
-                    <textarea
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      rows={5}
-                      className="garage-register-textarea"
-                      placeholder="Expliquez votre positionnement, vos certifications, vos horaires ou toute information utile pour votre dossier."
-                    />
-                  </label>
-                </section>
 
                 <section className="garage-register-section garage-register-submit-section">
-                  <label className="garage-register-consent">
-                    <input
-                      type="checkbox"
-                      name="acceptTerms"
-                      checked={formData.acceptTerms}
-                      onChange={handleChange}
-                    />
-                    <span>
-                      J accepte d etre recontacte par MecanoLib pour l etude de mon inscription partenaire.
-                    </span>
-                  </label>
-                  {errors.acceptTerms && <p className="garage-register-error-text">{errors.acceptTerms}</p>}
 
                   <div className="garage-register-actions">
                     <Link to="/garage" className="garage-register-secondary-link">

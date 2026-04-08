@@ -1,25 +1,24 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Wrench, Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button, Input, Card, CardContent } from '../../components';
-import { useApp } from '../../context/AppContext';
+import { clearStoredAuth, getStoredAuth, isJwtExpired, loginUser } from '../../services/api';
 import './GarageLogin.css';
 
 const GarageLogin = () => {
   const navigate = useNavigate();
-  const { loginGarage, garageAuth } = useApp();
+  const { token, role } = getStoredAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
-  // Si déjà connecté, rediriger vers le dashboard
-  if (garageAuth.isAuthenticated) {
-    navigate('/garage/dashboard');
-    return null;
+  if (token && !isJwtExpired(token) && role === 'garage') {
+    return <Navigate to="/garage/dashboard" replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -27,18 +26,24 @@ const GarageLogin = () => {
     setError('');
     setIsLoading(true);
 
-    // Simulation délai réseau
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const result = await loginUser({
+        email,
+        password,
+        remember: rememberMe,
+      });
 
-    const success = loginGarage({ email, password });
-    
-    if (success) {
+      if (result.role !== 'garage') {
+        clearStoredAuth();
+        throw new Error('Cet espace est réservé aux comptes garage.');
+      }
+
       navigate('/garage/dashboard');
-    } else {
-      setError('Email ou mot de passe incorrect');
+    } catch (err) {
+      setError(err.message || 'Email ou mot de passe incorrect');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -140,12 +145,12 @@ const GarageLogin = () => {
 
                 <div className="garage-login-options">
                   <label className="garage-login-remember">
-                    <input type="checkbox" />
+                    <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
                     <span>Se souvenir de moi</span>
                   </label>
-                  <a href="#" className="garage-login-forgot">
+                  <Link to="/mot-de-passe-oublie" className="garage-login-forgot">
                     Mot de passe oublié ?
-                  </a>
+                  </Link>
                 </div>
 
                 <Button

@@ -1,11 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { services, appointments as mockAppointments, garageInfo, garageStats } from '../data/mockData';
+import { isValidEmailFormat } from '../services/api';
 
 const AppContext = createContext();
 
 const CLIENTS_STORAGE_KEY = 'mecanolib_clients';
 const CLIENT_AUTH_STORAGE_KEY = 'mecanolib_client_auth';
+const APPOINTMENTS_STORAGE_KEY = 'mecanolib_appointments';
 
 const loadStoredValue = (key, fallbackValue) => {
   if (typeof window === 'undefined') {
@@ -38,7 +40,9 @@ export const useApp = () => {
 
 export const AppProvider = ({ children }) => {
   // État des rendez-vous
-  const [appointments, setAppointments] = useState(mockAppointments);
+  const [appointments, setAppointments] = useState(() =>
+    loadStoredValue(APPOINTMENTS_STORAGE_KEY, mockAppointments)
+  );
   
   // État du processus de réservation
   const [bookingState, setBookingState] = useState({
@@ -88,23 +92,44 @@ export const AppProvider = ({ children }) => {
 
   // Créer un nouveau rendez-vous
   const createAppointment = useCallback((appointmentData) => {
+    const requestedGarageId = String(appointmentData?.garageId ?? appointmentData?.garage?.id ?? '');
+
+    const alreadyReserved = appointments.some((appointment) => {
+      const isBlockedStatus = !['cancelled_client', 'cancelled_garage', 'refused'].includes(String(appointment?.status || ''));
+      const currentGarageId = String(appointment?.garageId ?? appointment?.garage?.id ?? '');
+
+      return isBlockedStatus
+        && currentGarageId === requestedGarageId
+        && appointment?.date === appointmentData?.date
+        && appointment?.time === appointmentData?.time;
+    });
+
+    if (alreadyReserved) {
+      throw new Error('Ce créneau est déjà réservé.');
+    }
+
     const newAppointment = {
-      id: `RDV-${String(appointments.length + 1).padStart(3, '0')}`,
+      id: appointmentData?.id || `RDV-${String(appointments.length + 1).padStart(3, '0')}`,
       ...appointmentData,
-      status: 'pending',
+      status: appointmentData?.status || 'reserved',
       createdAt: new Date().toISOString(),
     };
-    setAppointments((prev) => [newAppointment, ...prev]);
+
+    const nextAppointments = [newAppointment, ...appointments];
+    setAppointments(nextAppointments);
+    saveStoredValue(APPOINTMENTS_STORAGE_KEY, nextAppointments);
     return newAppointment;
-  }, [appointments.length]);
+  }, [appointments]);
 
   // Mettre à jour le statut d'un rendez-vous
   const updateAppointmentStatus = useCallback((appointmentId, newStatus) => {
-    setAppointments((prev) =>
-      prev.map((apt) =>
+    setAppointments((prev) => {
+      const nextAppointments = prev.map((apt) => (
         apt.id === appointmentId ? { ...apt, status: newStatus } : apt
-      )
-    );
+      ));
+      saveStoredValue(APPOINTMENTS_STORAGE_KEY, nextAppointments);
+      return nextAppointments;
+    });
   }, []);
 
   // Connexion garage
@@ -135,6 +160,13 @@ export const AppProvider = ({ children }) => {
 
   const registerClient = useCallback((clientData) => {
     const normalizedEmail = clientData.email.trim().toLowerCase();
+
+    if (!isValidEmailFormat(normalizedEmail)) {
+      return {
+        success: false,
+        message: 'Merci de saisir une adresse email valide.',
+      };
+    }
     const existingClient = registeredClients.find(
       (client) => client.email.toLowerCase() === normalizedEmail
     );
@@ -153,6 +185,12 @@ export const AppProvider = ({ children }) => {
       email: normalizedEmail,
       phone: clientData.phone.trim(),
       password: clientData.password,
+      location: {
+        city: clientData.city?.trim() || '',
+        postalCode: clientData.postalCode?.trim() || '',
+        address: clientData.address?.trim() || '',
+        codeInsee: clientData.codeInsee?.trim() || '',
+      },
       vehicle: {
         plate: clientData.plate?.trim() || '',
         brand: clientData.brand?.trim() || '',
@@ -174,6 +212,7 @@ export const AppProvider = ({ children }) => {
         lastName: newClient.lastName,
         email: newClient.email,
         phone: newClient.phone,
+        location: newClient.location,
         vehicle: newClient.vehicle,
         onboardingEmailSentAt: newClient.onboardingEmailSentAt,
       },
@@ -210,6 +249,7 @@ export const AppProvider = ({ children }) => {
         lastName: matchedClient.lastName,
         email: matchedClient.email,
         phone: matchedClient.phone,
+        location: matchedClient.location,
         vehicle: matchedClient.vehicle,
         onboardingEmailSentAt: matchedClient.onboardingEmailSentAt,
       },

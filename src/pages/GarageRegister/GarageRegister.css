@@ -213,6 +213,63 @@
   margin-bottom: 1rem;
 }
 
+.garage-register-grid-compact {
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 1rem;
+}
+
+.garage-register-autocomplete {
+  position: relative;
+}
+
+.garage-register-suggestion-hint {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.garage-register-suggestions {
+  position: absolute;
+  top: calc(100% - 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.12);
+}
+
+.garage-register-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 0.7rem 0.8rem;
+  cursor: pointer;
+}
+
+.garage-register-suggestion:hover {
+  background: #eff6ff;
+}
+
+.garage-register-suggestion strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.garage-register-suggestion span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
 .garage-register-field {
   display: flex;
   flex-direction: column;

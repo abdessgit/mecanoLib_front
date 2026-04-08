@@ -5,6 +5,7 @@ export { default as ClientLogin } from './ClientLogin/ClientLogin';
 export { default as ClientRegister } from './ClientRegister/ClientRegister';
 export { default as ClientDashboard } from './ClientDashboard/ClientDashboard';
 export { default as AdminLogin } from './AdminLogin/AdminLogin';
+export { default as AdminDashboard } from './AdminDashboard/AdminDashboard';
 export { default as GarageLogin } from './GarageLogin/GarageLogin';
 export { default as GarageRegister } from './GarageRegister/GarageRegister';
 export { default as GarageDashboard } from './GarageDashboard/GarageDashboard';
