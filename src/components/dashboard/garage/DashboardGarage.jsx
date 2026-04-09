@@ -129,8 +129,7 @@ export default function GarageRdv({ idGarage }) {
         logout();
         navigate("/auth");
     };
-    // a partire de la code khalef 
-
+    // a partire de la code khalef moi meme
 
 
     if (!user) return <p>Chargement...</p>;
