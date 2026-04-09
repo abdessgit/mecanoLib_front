@@ -1,6 +1,11 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AuthConnexion } from '../../connexion/AuthConnexion.jsx';
 import { useNavigate } from "react-router-dom";
+// fair par khalef 
+
+//-------------------
+
+
 import "./DashboardGarage.css";
 
 export default function GarageRdv({ idGarage }) {
@@ -124,10 +129,12 @@ export default function GarageRdv({ idGarage }) {
         logout();
         navigate("/auth");
     };
+    // a partire de la code khalef 
 
 
 
     if (!user) return <p>Chargement...</p>;
+
     return (<div className="dashboard">
         <div className="dashboard-card">
 

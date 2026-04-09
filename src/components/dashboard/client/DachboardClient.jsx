@@ -325,6 +325,36 @@ export default function DashboardClient() {
             console.error("Erreur :", err.message);
         }
     };
+    // la methode pour annuler un RDV 
+    const annulerRdv = async (idRdv) => {
+        if (!window.confirm("Voulez-vous vraiment annuler ce rendez-vous ?")) return;
+
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/v1/annuler_rdv/${idRdv}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ motif: "Annulation client" })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            //  mise à jour immédiate du statut dans l'UI
+            setRdvs(prev =>
+                prev.map(r =>
+                    r.id_rdv === idRdv ? { ...r, status: "Annulé" } : r
+                )
+            );
+
+            setNotification("Rendez-vous annulé avec succès");
+
+        } catch (err) {
+            setNotification("Erreur : " + err.message);
+        }
+    };
 
 
     if (!client) return <p>Chargement...</p>;
@@ -398,16 +428,27 @@ export default function DashboardClient() {
                             {rdv.date_debut} — {rdv.heure_debut}
                         </div>
 
-                        <div> Garage : {rdv.garage}</div>
-                        <div> Véhicule : {rdv.immatriculation}</div>
-                        <div> Prestation : {rdv.prestation}</div>
+                        <div>Garage : {rdv.garage}</div>
+                        <div>Véhicule : {rdv.immatriculation}</div>
+                        <div>Prestation : {rdv.prestation}</div>
 
-                        {/* Statut */}
                         <div className={`rdv-status ${rdv.status?.toLowerCase().replace(/\s/g, '-') || 'en-attente'}`}>
                             Statut : {rdv.status || "En attente"}
                         </div>
+
+                        {/*  bouton annuler */}
+                        {rdv.status !== "Annulé" && rdv.status !== "Terminé" && (
+                            <button
+                                className="btn-annuler-rdv"
+                                onClick={() => annulerRdv(rdv.id_rdv)}
+                            >
+                                Annuler le RDV
+                            </button>
+                        )}
+
                     </div>
                 ))}
+
             </div>
 
             {/* Ajouter véhicule */}

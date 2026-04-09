@@ -1,6 +1,6 @@
 import { useState, useEffect, use } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCategories, getPrestationsByCategorie, getGaragesByVille } from "../../../api/reservationApi";
+import { getCategories, getPrestationsByCategorie, getGaragesByVille, getPlanningByGarage } from "../../../api/reservationApi";
 import CardCategorie from "../../ReservationCard/CardCategorie";
 import CardPrestation from "../../ReservationCard/CardPrestation";
 import CardGarage from "../../ReservationCard/CardGarage";
@@ -26,7 +26,7 @@ export default function BookingPage() {
     const [loadingPrestations, setLoadingPrestations] = useState(false);
     const [loadingGarages, setLoadingGarages] = useState(false);
 
-    // button de navigation
+    // gestion de planning 
 
     const prevStep = () => setStep(prev => prev - 1);
     // gerer les erreur 
@@ -115,14 +115,8 @@ export default function BookingPage() {
 
         prevStep();
     };
-    // derigier vers la page connexion/inscription 
-    const durePlanning = [
-        { date: "2026-04-02", heure: "09:00" },
-        { date: "2026-04-02", heure: "11:00" },
-        { date: "2026-04-02", heure: "14:00" },
-        { date: "2026-04-03", heure: "10:00" },
-        { date: "2026-04-03", heure: "15:00" },
-    ];
+
+    // affiche de planning 
 
     // Sélection d’un créneau → redirection vers auth
     const handleSelectCreneau = (creneau) => {
@@ -158,7 +152,7 @@ export default function BookingPage() {
             <h1>Prendre rendez-vous</h1>
             <p className="subtitle">Réservez votre créneau en quelques étapes simples</p>
             {message && <p className="error-message">{message}</p>}
-            {/* STEPPER DYNAMIQUE */}
+
             <div className="stepper">
                 <div className={`step ${step > 1 && "done"} ${step === 1 && "active"}`}>Categorie</div>
                 <div className={`step ${step > 2 && "done"} ${step === 2 && "active"}`}>Prestation</div>
@@ -193,15 +187,14 @@ export default function BookingPage() {
                     garages={garages}
                     loading={loadingGarages}
                     onSearchGarage={handleSearchGarage}
-                    onSelectGarage={handleSelectGarage} // ✅ on utilise le bon handler
+                    onSelectGarage={handleSelectGarage}
                 />
             )}
             {/* CARD 4 — Planning en dur */}
             {step === 4 && (
                 <CardPlanning
-                    prestations={durePlanning}
+                    prestations={planning} //  le planning réel
                     onSelectCreneau={handleSelectCreneau}
-
                 />
             )}
             {message && <p className="error-message">{message}</p>}

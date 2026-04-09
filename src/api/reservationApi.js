@@ -29,3 +29,16 @@ export async function getGaragesByVille(idVille) {
     if (!res.ok) throw new Error("Erreur chargement garages");
     return await res.json();
 }
+// affichage le planning de garage 
+/*export const getPlanningByGarage = async (garageId) => {
+    const res = await fetch(`/api/v1/get_planning_by_garage/${garageId}`);
+    if (!res.ok) throw new Error("Impossible de récupérer le planning");
+    return await res.json();
+};*/
+// affichage planning test 
+export const getPlanningByGarage = async (idGarage) => {
+    const res = await fetch(`http://localhost:8000/api/v1/garage/${idGarage}/planning`);
+
+    if (!res.ok) throw new Error("Impossible de récupérer le planning");
+    return await res.json();
+};
