@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom"; // pour récupérer le token dans l'URL
+import { resetPassword as resetPasswordApi } from "../../services/api";
 
 const ResetPassword = () => {
     const [password, setPassword] = useState("");
@@ -21,24 +22,11 @@ const ResetPassword = () => {
         }
 
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/v1/users/reset_password", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ token, password }),
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                setMessage(data.message);
-                setPassword("");
-                setConfirmPassword("");
-            } else {
-                setError(data.message || "Erreur lors de la réinitialisation");
-            }
-        } catch (err) {
+            const data = await resetPasswordApi(token, password);
+            setMessage(data?.message || "Mot de passe mis a jour.");
+            setPassword("");
+            setConfirmPassword("");
+        } catch {
             setError("Erreur réseau, réessayez plus tard");
         }
     };

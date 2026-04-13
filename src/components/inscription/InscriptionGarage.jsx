@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { checkSiretInsee, registerClient, registerGarage } from "../../services/api";
 import './Inscription.css';
 
 function RegisterForm() {
@@ -102,8 +103,7 @@ function RegisterForm() {
         setLoadingSiret(true);
 
         try {
-            const res = await fetch(`http://127.0.0.1:8000/api/v1/check_siret_insee/${value}`);
-            const result = await res.json();
+            const result = await checkSiretInsee(value);
             if (lastSiret.current !== value) return;
             if (!result.exists) {
                 setMessage("SIRET introuvable");
@@ -139,10 +139,6 @@ function RegisterForm() {
         }
 
         try {
-            let url = form.typeUtilisateur === "garage"
-                ? "http://127.0.0.1:8000/api/v1/users/inscrire-garage"
-                : "http://127.0.0.1:8000/api/v1/users/inscrire_client";
-
             const payload = form.typeUtilisateur === "garage"
                 ? {
                     nom_garage: form.nom_garage,
@@ -167,13 +163,9 @@ function RegisterForm() {
                     consentement_client: form.consentement_client,
                 };
 
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
+            const data = form.typeUtilisateur === "garage"
+                ? await registerGarage(payload)
+                : await registerClient(payload);
             setMessage(data.message || "Inscription réussie");
 
         } catch (error) {

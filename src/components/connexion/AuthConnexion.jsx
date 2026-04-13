@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useCallback } from "react";
+import { API_BASE_URL } from "../../services/api";
 
 export const AuthConnexion = createContext();
 
@@ -8,14 +9,16 @@ export const AuthProvider = ({ children }) => {
     );
     const [token, setToken] = useState(localStorage.getItem("token") || null);
 
-    // Récupération de l'utilisateur si token existant
-    useEffect(() => {
-        if (token) fetchUser(token);
-    }, [token]);
+    const logout = useCallback(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setToken(null);
+        setUser(null);
+    }, []);
 
-    const fetchUser = async (jwt) => {
+    const fetchUser = useCallback(async (jwt) => {
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/v1/users/connecter", {
+            const res = await fetch(`${API_BASE_URL}/api/v1/users/connecter`, {
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${jwt}`
@@ -25,14 +28,19 @@ export const AuthProvider = ({ children }) => {
             const data = await res.json();
             setUser(data);
             localStorage.setItem("user", JSON.stringify(data));
-        } catch (err) {
+        } catch {
             logout();
         }
-    };
+    }, [logout]);
+
+    // Récupération de l'utilisateur si token existant
+    useEffect(() => {
+        if (token) fetchUser(token);
+    }, [token, fetchUser]);
 
     const login = async ({ emailUtilisateur, mdpUtilisateur, authCode }) => {
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/v1/users/login", {
+            const res = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ emailUtilisateur, mdpUtilisateur, authCode })
@@ -59,16 +67,9 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true, user: JSON.parse(localStorage.getItem("user")) };
 
-        } catch (err) {
+        } catch {
             return { success: false, message: "Serveur inaccessible" };
         }
-    };
-
-    const logout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        setToken(null);
-        setUser(null);
     };
 
     return (

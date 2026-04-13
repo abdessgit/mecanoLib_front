@@ -2,6 +2,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:800
 const AUTH_TOKEN_KEY = "auth_token"
 const AUTH_ROLE_KEY = "auth_role"
 const AUTH_REMEMBER_KEY = "auth_remember"
+const LEGACY_TOKEN_KEY = "token"
 
 async function safeJson(response) {
     try {
@@ -25,7 +26,7 @@ async function apiFetch(path, options = {}) {
 
 function buildAuthHeaders(token) {
     return {
-        "Content-Type": "apilication/json",
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
     }
 }
@@ -33,7 +34,7 @@ function buildAuthHeaders(token) {
 function buildJsonHeaders(token) {
     if (!token) {
         return {
-            "Content-Type": "apilication/json",
+            "Content-Type": "application/json",
         }
     }
 
@@ -43,13 +44,30 @@ function buildJsonHeaders(token) {
 export function getStoredAuth() {
     const localToken = localStorage.getItem(AUTH_TOKEN_KEY)
     const sessionToken = sessionStorage.getItem(AUTH_TOKEN_KEY)
-    const token = localToken || sessionToken
+    const legacyLocalToken = localStorage.getItem(LEGACY_TOKEN_KEY)
+    const legacySessionToken = sessionStorage.getItem(LEGACY_TOKEN_KEY)
+    const token = localToken || sessionToken || legacyLocalToken || legacySessionToken
 
     const localRole = localStorage.getItem(AUTH_ROLE_KEY)
     const sessionRole = sessionStorage.getItem(AUTH_ROLE_KEY)
-    const role = localRole || sessionRole
+    const storedRole = localRole || sessionRole || ""
+    const role = storedRole || extractRoleFromJwt(token)
 
     return { token, role }
+}
+
+function extractRoleFromJwt(token) {
+    if (!token) return ""
+    const parts = String(token).split(".")
+    if (parts.length !== 3) return ""
+
+    try {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")))
+        const roleCandidate = payload?.roles?.[0] || payload?.role || ""
+        return normalizeRole(roleCandidate)
+    } catch {
+        return ""
+    }
 }
 
 export function setStoredAuth({ token, role, remember }) {
@@ -59,19 +77,239 @@ export function setStoredAuth({ token, role, remember }) {
     targetStorage.setItem(AUTH_TOKEN_KEY, token)
     targetStorage.setItem(AUTH_ROLE_KEY, role)
     targetStorage.setItem(AUTH_REMEMBER_KEY, remember ? "1" : "0")
+    targetStorage.setItem(LEGACY_TOKEN_KEY, token)
 
     otherStorage.removeItem(AUTH_TOKEN_KEY)
     otherStorage.removeItem(AUTH_ROLE_KEY)
     otherStorage.removeItem(AUTH_REMEMBER_KEY)
+    otherStorage.removeItem(LEGACY_TOKEN_KEY)
 }
 
 export function clearStoredAuth() {
     localStorage.removeItem(AUTH_TOKEN_KEY)
     localStorage.removeItem(AUTH_ROLE_KEY)
     localStorage.removeItem(AUTH_REMEMBER_KEY)
+    localStorage.removeItem(LEGACY_TOKEN_KEY)
     sessionStorage.removeItem(AUTH_TOKEN_KEY)
     sessionStorage.removeItem(AUTH_ROLE_KEY)
     sessionStorage.removeItem(AUTH_REMEMBER_KEY)
+    sessionStorage.removeItem(LEGACY_TOKEN_KEY)
+}
+
+function normalizeRole(rawRole) {
+    const role = String(rawRole || "").toLowerCase()
+    if (role.includes("super_admin")) return "super_admin"
+    if (role.includes("admin") || role.includes("garage")) return "garage"
+    if (role.includes("user") || role.includes("client")) return "client"
+    return "client"
+}
+
+export function getDefaultDashboardPath(role) {
+    const normalized = normalizeRole(role)
+    if (normalized === "super_admin") return "/dashboardSuperAdmin"
+    if (normalized === "garage") return "/dashboardGarage"
+    return "/dashboardClient"
+}
+
+export function isJwtExpired(token) {
+    if (!token) return true
+    const parts = String(token).split(".")
+    if (parts.length !== 3) return false
+
+    try {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")))
+        if (!payload?.exp) return false
+        return Date.now() >= payload.exp * 1000
+    } catch {
+        return false
+    }
+}
+
+function extractRoleFromPayload(data) {
+    const roleCandidate = data?.role || data?.user?.role || data?.roles?.[0] || data?.user?.roles?.[0]
+    return normalizeRole(roleCandidate)
+}
+
+export async function loginUser({ email, password, otp, remember } = {}) {
+    const payload = {
+        emailUtilisateur: email,
+        mdpUtilisateur: password,
+    }
+
+    if (otp) {
+        payload.authCode = otp
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
+        method: "POST",
+        headers: buildJsonHeaders(),
+        body: JSON.stringify(payload),
+    })
+
+    const data = await safeJson(response)
+
+    if (!response.ok) {
+        const message = data?.message || data?.error || "Connexion impossible"
+        if (response.status === 403 && /2fa|authenticator|code/i.test(message)) {
+            return {
+                requires2fa: true,
+                error: message,
+            }
+        }
+
+        throw new Error(message)
+    }
+
+    if (data?.need2FA || data?.requires2fa) {
+        return {
+            requires2fa: true,
+            error: data?.message || "Code 2FA requis",
+        }
+    }
+
+    const token = data?.token || data?.jwt || ""
+    const role = extractRoleFromPayload(data)
+
+    if (token) {
+        setStoredAuth({ token, role, remember: Boolean(remember) })
+    }
+
+    return {
+        requires2fa: false,
+        token,
+        role,
+        user: data?.user || null,
+    }
+}
+
+export async function getProfile(token) {
+    const data = await apiFetch("/api/v1/users/connecter", {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+
+    return {
+        ...data,
+        id: data?.userId,
+        nom: data?.nom || "",
+        prenom: data?.prenom || "",
+        email: data?.email || "",
+        tel: data?.tel || "",
+        data: {
+            id: data?.userId,
+            nom: data?.nom || "",
+            prenom: data?.prenom || "",
+            email: data?.email || "",
+            tel: data?.tel || "",
+        },
+    }
+}
+
+export async function updateMyProfile(token, payload) {
+    return apiFetch("/api/v1/users/me", {
+        method: "PATCH",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(payload),
+    })
+}
+
+export async function requestPasswordReset(email) {
+    return apiFetch("/api/v1/users/forget_password", {
+        method: "POST",
+        headers: buildJsonHeaders(),
+        body: JSON.stringify({ email }),
+    })
+}
+
+export async function resetPassword(token, password) {
+    return apiFetch("/api/v1/users/reset_password", {
+        method: "POST",
+        headers: buildJsonHeaders(),
+        body: JSON.stringify({ token, password }),
+    })
+}
+
+export async function getPrestations() {
+    const response = await getPrestationsCatalogue()
+    return response?.prestations || []
+}
+
+export async function getUsersByRole(token, role) {
+    return apiFetch("/api/v1/users/get_utilisateur", {
+        method: "POST",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ role }),
+    })
+}
+
+export async function getAdminGarages(token) {
+    return apiFetch("/api/v1/garages/search", {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function validateGarage(token, garageId, isValide = true) {
+    return apiFetch(`/api/v1/garages/${garageId}/validation`, {
+        method: "PATCH",
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ isValide }),
+    })
+}
+
+export async function getAllAvis(token) {
+    return apiFetch("/api/v1/avis", {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function getClientRendezVous(token) {
+    return apiFetch("/api/v1/client/rdv/me", {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+}
+
+export async function getClientDashboard(token) {
+    const profile = await getProfile(token)
+    const rdvRaw = await getClientRendezVous(token)
+    const rdv = Array.isArray(rdvRaw?.rdv) ? rdvRaw.rdv : Array.isArray(rdvRaw) ? rdvRaw : []
+
+    return {
+        fullName: [profile?.prenomUtilisateur, profile?.nomUtilisateur].filter(Boolean).join(" ") || "Client",
+        stats: [
+            { label: "RDV planifies", value: rdv.length, icon: "RDV" },
+            { label: "Garages suivis", value: "-", icon: "GAR" },
+            { label: "Interventions", value: rdv.length, icon: "INT" },
+            { label: "Notifications", value: "-", icon: "NOT" },
+        ],
+        appointments: rdv.slice(0, 5).map((item) => ({
+            id: item?.idRdv || item?.id || Math.random().toString(36).slice(2),
+            garage: item?.garage?.nomGarage || item?.nomGarage || "Garage",
+            service: item?.prestation?.nomPrestation || item?.nomPrestation || "Prestation",
+            date: item?.dateDebut || item?.date || "-",
+            status: item?.status || "En attente",
+        })),
+    }
+}
+
+export async function getClientDevisSnapshot(token) {
+    const response = await apiFetch("/api/v1/client/devis/me", {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+
+    return Array.isArray(response?.devis) ? response.devis : []
+}
+
+export async function getClientFacturesSnapshot(token) {
+    const response = await apiFetch("/api/v1/client/factures/me", {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+    })
+
+    return Array.isArray(response?.factures) ? response.factures : []
 }
 
 export async function get2faStatus(token) {
@@ -193,6 +431,57 @@ export async function createClientRdv(token, data) {
     })
 }
 
+export async function createRendezVous(token, data) {
+    if (!data?.garageId || !data?.vehiculeId || !data?.prestationId) {
+        throw new Error("Informations manquantes. Utilisez le formulaire complet de reservation.")
+    }
+
+    const start = new Date(`${data.date}T${data.heure}:00`)
+    const end = new Date(start)
+    end.setMinutes(end.getMinutes() + 60)
+
+    const formatDateTimeForApi = (dateObj) => {
+        const year = dateObj.getFullYear()
+        const month = String(dateObj.getMonth() + 1).padStart(2, "0")
+        const day = String(dateObj.getDate()).padStart(2, "0")
+        const hours = String(dateObj.getHours()).padStart(2, "0")
+        const minutes = String(dateObj.getMinutes()).padStart(2, "0")
+        const seconds = String(dateObj.getSeconds()).padStart(2, "0")
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    }
+
+    return createClientRdv(token, {
+        id_garage: Number(data.garageId),
+        id_vehicule: Number(data.vehiculeId),
+        id_prestation: Number(data.prestationId),
+        date_debut: formatDateTimeForApi(start),
+        date_fin: formatDateTimeForApi(end),
+        commantaire_client: data.motif || "Demande client",
+    })
+}
+
+export async function registerClient(payload) {
+    return apiFetch("/api/v1/users/inscrire_client", {
+        method: "POST",
+        headers: buildJsonHeaders(),
+        body: JSON.stringify(payload),
+    })
+}
+
+export async function registerGarage(payload) {
+    return apiFetch("/api/v1/users/inscrire-garage", {
+        method: "POST",
+        headers: buildJsonHeaders(),
+        body: JSON.stringify(payload),
+    })
+}
+
+export async function checkSiretInsee(siret) {
+    return apiFetch(`/api/v1/check_siret_insee/${encodeURIComponent(siret)}`, {
+        method: "GET",
+    })
+}
+
 export async function addGaragePrestation(token, data) {
     return apiFetch("/api/v1/prestations", {
         method: "POST",
@@ -284,6 +573,10 @@ export default {
     getPrestationsCatalogue,
     getClientVehiculesMe,
     createClientRdv,
+    createRendezVous,
+    registerClient,
+    registerGarage,
+    checkSiretInsee,
     addGaragePrestation,
     deleteGaragePrestation,
     getGarageRdvList,
@@ -293,6 +586,22 @@ export default {
     addGarageRdvHistorique,
     createGarageRdv,
     changePassword,
+    loginUser,
+    getProfile,
+    updateMyProfile,
+    requestPasswordReset,
+    resetPassword,
+    getPrestations,
+    getUsersByRole,
+    getAdminGarages,
+    validateGarage,
+    getAllAvis,
+    getClientRendezVous,
+    getClientDashboard,
+    getClientDevisSnapshot,
+    getClientFacturesSnapshot,
+    isJwtExpired,
+    getDefaultDashboardPath,
 }
 
 export { API_BASE_URL }

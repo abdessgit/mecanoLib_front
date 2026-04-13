@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { requestPasswordReset } from "../../services/api";
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState("");
@@ -6,16 +7,7 @@ const ForgotPassword = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        const res = await fetch("http://127.0.0.1:8000/api/v1/users/forget_password", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email }),
-        });
-
-        const data = await res.json();
+        await requestPasswordReset(email);
         setMessage("Si cet email existe, un lien a été envoyé ");
     };
 
