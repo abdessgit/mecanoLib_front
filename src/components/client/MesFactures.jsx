@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getStoredAuth, getProfile } from '../../services/api';
+import { Link } from 'react-router-dom';
+import { getClientFacturesSnapshot, getStoredAuth } from '../../services/api';
 
 
 const MesFactures = () => {
@@ -14,13 +15,8 @@ const MesFactures = () => {
       try {
         const { token } = getStoredAuth();
         if (!token) throw new Error("Vous devez être connecté.");
-        const profile = await getProfile(token);
-        const clientId = profile?.id || profile?.data?.id;
-        if (!clientId) throw new Error("Impossible de récupérer l'identifiant client.");
-        // Remplacer par l'appel API réel pour les factures du client
-        // Exemple fictif : const data = await getFacturesClient(token, clientId);
-        const data = [];
-        setFactures(Array.isArray(data) ? data : (data?.data || []));
+        const data = await getClientFacturesSnapshot(token);
+        setFactures(Array.isArray(data) ? data : []);
       } catch (err) {
         setError(err.message || "Erreur lors du chargement des factures.");
       } finally {
@@ -35,6 +31,12 @@ const MesFactures = () => {
       <h1 className="fw-bold mb-4">Mes factures</h1>
       {loading && <div className="alert alert-info">Chargement...</div>}
       {error && <div className="alert alert-danger">{error}</div>}
+      {!loading && !error && factures.length === 0 && (
+        <div className="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <span>Aucune facture émise pour le moment. Les interventions terminées apparaitront ici.</span>
+          <Link to="/client/rendez-vous" className="btn btn-sm btn-outline-secondary">Voir mes rendez-vous</Link>
+        </div>
+      )}
       <table className="table table-bordered">
         <thead>
           <tr>

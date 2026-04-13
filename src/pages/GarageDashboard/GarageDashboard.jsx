@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -29,7 +29,7 @@ import {
   Modal 
 } from '../../components';
 import { useApp } from '../../context/AppContext';
-import { services, garageStats } from '../../data/mockData';
+import { services } from '../../data/mockData';
 import './GarageDashboard.css';
 
 const GarageDashboard = () => {
@@ -43,11 +43,11 @@ const GarageDashboard = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Si pas connecté, rediriger vers login
-  if (!garageAuth.isAuthenticated) {
-    navigate('/garage');
-    return null;
-  }
+  useEffect(() => {
+    if (!garageAuth.isAuthenticated) {
+      navigate('/garage');
+    }
+  }, [garageAuth.isAuthenticated, navigate]);
 
   // Filtrer les rendez-vous
   const filteredAppointments = useMemo(() => {
@@ -117,6 +117,10 @@ const GarageDashboard = () => {
     newDate.setDate(newDate.getDate() + days);
     setCurrentDate(newDate);
   };
+
+  if (!garageAuth.isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="garage-dashboard">

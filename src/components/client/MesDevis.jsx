@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getStoredAuth, getProfile } from '../../services/api';
+import { Link } from 'react-router-dom';
+import { getClientDevisSnapshot, getStoredAuth } from '../../services/api';
 
 
 const MesDevis = () => {
@@ -14,13 +15,8 @@ const MesDevis = () => {
       try {
         const { token } = getStoredAuth();
         if (!token) throw new Error("Vous devez être connecté.");
-        const profile = await getProfile(token);
-        const clientId = profile?.id || profile?.data?.id;
-        if (!clientId) throw new Error("Impossible de récupérer l'identifiant client.");
-        // Remplacer par l'appel API réel pour les devis du client
-        // Exemple fictif : const data = await getDevisClient(token, clientId);
-        const data = [];
-        setDevis(Array.isArray(data) ? data : (data?.data || []));
+        const data = await getClientDevisSnapshot(token);
+        setDevis(Array.isArray(data) ? data : []);
       } catch (err) {
         setError(err.message || "Erreur lors du chargement des devis.");
       } finally {
@@ -35,6 +31,12 @@ const MesDevis = () => {
       <h1 className="fw-bold mb-4">Mes devis</h1>
       {loading && <div className="alert alert-info">Chargement...</div>}
       {error && <div className="alert alert-danger">{error}</div>}
+      {!loading && !error && devis.length === 0 && (
+        <div className="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <span>Aucun devis disponible pour le moment. Vous pouvez lancer une nouvelle demande de rendez-vous.</span>
+          <Link to="/garages" className="btn btn-sm btn-warning">Trouver un garage</Link>
+        </div>
+      )}
       <table className="table table-bordered">
         <thead>
           <tr>

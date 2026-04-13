@@ -1,30 +1,28 @@
 
 import React, { useEffect, useState } from 'react';
-import { getStoredAuth, getProfile } from '../../services/api';
+import { getStoredAuth, getProfile, updateMyProfile } from '../../services/api';
 
 
 const MonProfil = () => {
-  const [profile, setProfile] = useState({ nom: '', prenom: '', email: '' });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { token } = getStoredAuth();
+  const [profile, setProfile] = useState({ nom: '', prenom: '', email: '', telephone: '' });
+  const [loading, setLoading] = useState(Boolean(token));
+  const [error, setError] = useState(token ? "" : "Vous devez être connecté.");
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    const { token } = getStoredAuth();
-    if (!token) {
-      setError("Vous devez être connecté.");
-      setLoading(false);
-      return;
-    }
+    if (!token) return;
+
     getProfile(token)
       .then((data) => setProfile({
         nom: data.nom || data.data?.nom || '',
         prenom: data.prenom || data.data?.prenom || '',
         email: data.email || data.data?.email || '',
+        telephone: data.tel || data.data?.tel || '',
       }))
       .catch(() => setError("Impossible de charger le profil."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [token]);
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -34,8 +32,17 @@ const MonProfil = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    // TODO: Ajouter l'appel API pour mettre à jour le profil
-    setSuccess("Profil mis à jour (simulation).");
+    try {
+      await updateMyProfile(token, {
+        nom: profile.nom,
+        prenom: profile.prenom,
+        email: profile.email,
+        telephone: profile.telephone,
+      });
+      setSuccess("Profil mis a jour avec succes.");
+    } catch (err) {
+      setError(err.message || "Impossible de mettre a jour le profil.");
+    }
   };
 
   return (
@@ -57,6 +64,10 @@ const MonProfil = () => {
           <div className="mb-3">
             <label className="form-label">Email</label>
             <input type="email" className="form-control" name="email" value={profile.email} onChange={handleChange} required />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Telephone</label>
+            <input type="text" className="form-control" name="telephone" value={profile.telephone} onChange={handleChange} />
           </div>
           <button type="submit" className="btn btn-primary">Mettre à jour</button>
         </form>

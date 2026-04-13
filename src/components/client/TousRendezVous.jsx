@@ -18,7 +18,7 @@ const TousRendezVous = () => {
         const clientId = profile?.id || profile?.data?.id;
         if (!clientId) throw new Error("Impossible de récupérer l'identifiant client.");
         const data = await getClientRendezVous(token, clientId);
-        setRdvs(Array.isArray(data) ? data : (data?.data || []));
+        setRdvs(Array.isArray(data) ? data : (data?.rdv || data?.data || []));
       } catch (err) {
         setError(err.message || "Erreur lors du chargement des rendez-vous.");
       } finally {
@@ -49,8 +49,8 @@ const TousRendezVous = () => {
           )}
           {rdvs.map((rdv, idx) => (
             <tr key={rdv.id || idx}>
-              <td>{rdv.date || rdv.date_rdv || "-"}</td>
-              <td>{rdv.heure || rdv.heure_rdv || "-"}</td>
+              <td>{rdv.date || rdv.date_rdv || rdv.dateDebut?.split(" ")?.[0] || "-"}</td>
+              <td>{rdv.heure || rdv.heure_rdv || rdv.dateDebut?.split(" ")?.[1] || "-"}</td>
               <td>{rdv.garage?.nom_garage || rdv.garage_name || rdv.garage || "-"}</td>
               <td>{rdv.motif || rdv.service || rdv.prestation || "-"}</td>
               <td>{rdv.status || rdv.etat || "-"}</td>

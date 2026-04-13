@@ -175,7 +175,7 @@ const Booking = () => {
   const availableDates = generateDates();
 
   // Obtenir les créneaux pour la date sélectionnée
-  const getTimeSlotsForDate = (date) => {
+  const getTimeSlotsForDate = () => {
     // Simulation: retourner des créneaux aléatoires
     const slots = [];
     const times = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', 

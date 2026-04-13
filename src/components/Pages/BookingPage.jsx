@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import * as api from "../../services/api.js";
 import { AuthConnexion } from "../connexion/AuthConnexion";
 import "./BookingPage.css";
@@ -110,8 +110,9 @@ function isGarageAvailableOnSlot(planningResponse, rdvResponse, dateValue, timeV
 
 export default function BookingPage() {
     const { token } = useContext(AuthConnexion);
+    const [searchParams] = useSearchParams();
     const [form, setForm] = useState({
-        ville: "",
+        ville: searchParams.get("ville") || "",
         prestationId: "",
         date: "",
         time: "",
@@ -127,6 +128,7 @@ export default function BookingPage() {
     const [bookingMessage, setBookingMessage] = useState("");
     const [error, setError] = useState("");
     const [hasSearched, setHasSearched] = useState(false);
+    const preferredGarageId = searchParams.get("garageId");
 
     useEffect(() => {
         const loadPrestations = async () => {
@@ -235,6 +237,22 @@ export default function BookingPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (form.ville.trim()) {
+            setHasSearched(false);
+        }
+    }, [form.ville]);
+
+    const orderedGarages = useMemo(() => {
+        if (!preferredGarageId) return garages;
+
+        return [...garages].sort((left, right) => {
+            if (String(left.idGarage) === String(preferredGarageId)) return -1;
+            if (String(right.idGarage) === String(preferredGarageId)) return 1;
+            return 0;
+        });
+    }, [garages, preferredGarageId]);
 
     const handleBook = async (garage) => {
         setError("");
@@ -359,7 +377,7 @@ export default function BookingPage() {
                         {garages.length === 0 ? (
                             <p className="booking-feedback">Aucun garage trouvé pour ces critères.</p>
                         ) : (
-                            garages.map((garage) => (
+                            orderedGarages.map((garage) => (
                                 <article
                                     key={garage.idGarage}
                                     className={`booking-garage-card ${
@@ -380,6 +398,10 @@ export default function BookingPage() {
                                             <span className="booking-status booking-status-ko">Indisponible</span>
                                         )}
                                     </header>
+
+                                    {String(garage.idGarage) === String(preferredGarageId) ? (
+                                        <p className="booking-feedback booking-feedback-success">Garage preselectionne depuis la recherche.</p>
+                                    ) : null}
 
                                     <p>{garage.adresseGarage}</p>
                                     <p>
