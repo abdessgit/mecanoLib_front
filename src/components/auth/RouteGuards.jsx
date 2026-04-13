@@ -7,7 +7,7 @@ export function ProtectedRoute({ children, allowedRoles }) {
 
     if (!token || isJwtExpired(token)) {
         clearStoredAuth();
-        return <Navigate to="/connexion" replace />;
+        return <Navigate to="/auth" replace />;
     }
 
     if (Array.isArray(allowedRoles) && allowedRoles.length > 0 && role && !allowedRoles.includes(role)) {
