@@ -29,7 +29,9 @@ export default function DashboardClient() {
     const [code2FA, setCode2FA] = useState("");
     const [messageActivation, setMessageActivation] = useState("");
     const [messageValidation, setMessageValidation] = useState("");
-    const [notification, setNotification] = useState(""); // pour messages 
+    const [notificationCar, setNotificationCar] = useState(""); // pour messages 
+    const [notificationRdv, setNotificationRdv] = useState(""); // pour messages 
+
 
     // --- Vérifier 2FA à la connexion ---
     useEffect(() => {
@@ -216,10 +218,10 @@ export default function DashboardClient() {
                 id_modele: ""
             });
 
-            setNotification("Véhicule ajouté avec succès");
+            setNotificationCar("Véhicule ajouté avec succès");
 
         } catch (err) {
-            setNotification("Erreur: " + err.message);
+            setNotificationCar("Erreur: " + err.message);
         }
     };
 
@@ -235,9 +237,9 @@ export default function DashboardClient() {
             if (!res.ok) throw new Error(data.message);
 
             setVehicules(prev => prev.map(v => v.id_vehicule === id ? { ...v, ...updatedData } : v));
-            setNotification("Véhicule modifié avec succès ");
+            setNotificationCar("Véhicule modifié avec succès ");
         } catch (err) {
-            setNotification("Erreur: " + err.message);
+            setNotificationCar("Erreur: " + err.message);
         }
     };
 
@@ -253,9 +255,9 @@ export default function DashboardClient() {
             if (!res.ok) throw new Error(data.message);
 
             setVehicules(prev => prev.filter(v => v.id_vehicule !== id));
-            setNotification("Véhicule supprimé avec succès ");
+            setNotificationCar("Véhicule supprimé avec succès ");
         } catch (err) {
-            setNotification("Erreur: " + err.message);
+            setNotificationCar("Erreur: " + err.message);
         }
     };
     useEffect(() => {
@@ -311,6 +313,7 @@ export default function DashboardClient() {
     // --- Récupérer le statut d'un RDV par son id ---
     const fetchStatusRdv = async (rdvId) => {
         try {
+
             const res = await fetch(`http://127.0.0.1:8000/api/v1/rdv/${rdvId}/status`, {
                 headers: { Authorization: `Bearer ${token}` },
                 cache: "no-store"
@@ -345,14 +348,14 @@ export default function DashboardClient() {
             //  mise à jour immédiate du statut dans l'UI
             setRdvs(prev =>
                 prev.map(r =>
-                    r.id_rdv === idRdv ? { ...r, status: "Annulé" } : r
+                    r.id_rdv === idRdv ? { ...r, status: "Annuler" } : r
                 )
             );
 
-            setNotification("Rendez-vous annulé avec succès");
+            setNotificationRdv("Rendez-vous annulé avec succès");
 
         } catch (err) {
-            setNotification("Erreur : " + err.message);
+            setNotificationRdv("Erreur : " + err.message);
         }
     };
 
@@ -404,6 +407,7 @@ export default function DashboardClient() {
             </div>
             {/* Véhicules */}
             <div className="client-dashboard-vehicules">
+                {notificationCar && <div className="notification">{notificationCar}</div>}
                 <h2>Mes véhicules</h2>
                 {vehicules && vehicules.map(v => v ? (
                     <div key={v.id_vehicule} className="client-dashboard-vehicule-item">
@@ -418,10 +422,9 @@ export default function DashboardClient() {
                 ) : null)}
             </div>
             <div className="client-dashboard-rdvs">
+                {notificationRdv && <div className="notification">{notificationRdv}</div>}
                 <h2>Mes rendez-vous</h2>
-
                 {rdvs.length === 0 && <p>Aucun rendez-vous</p>}
-
                 {rdvs.map(rdv => (
                     <div key={rdv.id_rdv} className="rdv-card">
                         <div className="rdv-date">
@@ -432,12 +435,12 @@ export default function DashboardClient() {
                         <div>Véhicule : {rdv.immatriculation}</div>
                         <div>Prestation : {rdv.prestation}</div>
 
-                        <div className={`rdv-status ${rdv.status?.toLowerCase().replace(/\s/g, '-') || 'en-attente'}`}>
+                        <div className={`rdv-status ${rdv.status?.toLowerCase().replace(/\s/g, '-') || 'En-attente'}`}>
                             Statut : {rdv.status || "En attente"}
                         </div>
 
                         {/*  bouton annuler */}
-                        {rdv.status !== "Annulé" && rdv.status !== "Terminé" && (
+                        {rdv.status !== "Annuler" && rdv.status !== "Terminer" && (
                             <button
                                 className="btn-annuler-rdv"
                                 onClick={() => annulerRdv(rdv.id_rdv)}
@@ -453,8 +456,10 @@ export default function DashboardClient() {
 
             {/* Ajouter véhicule */}
             <div className="client-dashboard-add-vehicule">
+                {notificationCar && <div className="notification">{notificationCar}</div>}
+
                 <h2>Ajouter un véhicule</h2>
-                {notification && <div className="notification">{notification}</div>}
+
                 <input type="text" placeholder="Immatriculation" value={newVehicule.immatriculation}
                     onChange={e => setNewVehicule({ ...newVehicule, immatriculation: e.target.value })} />
                 <input type="text" placeholder="Année" value={newVehicule.annee}

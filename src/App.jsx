@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import HomePage from "./components/Pages/Home/HomePage";
 import AuthPage from "./components/AuthPage/AuthPage";
 import DashboardGarage from "./components/dashboard/garage/DashboardGarage";
@@ -9,10 +9,14 @@ import DashboardClient from "./components/dashboard/client/DachboardClient";
 import ResetPassword from "./components/AuthPage/ResetPassword";
 import Footer from "./components/Footer/Footer";
 import Reserver from "./components/Pages/Reservation/Reserver";
+
 function App() {
+    const location = useLocation();
+    const hideHeader = location.pathname === "/dashboardGarage";
+
     return (
         <>
-            <Header />
+            {!hideHeader && <Header />}
             <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/auth" element={<AuthPage />} />

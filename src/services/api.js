@@ -1,0 +1,22 @@
+// Proxy vers l'API garage pour compatibilité avec les imports existants
+export {
+  changeRendezVousStatus,
+  changeGaragePassword,
+  clearStoredAuth,
+  getAssociations,
+  getFrenchAddressSuggestions,
+  getFrenchCitySuggestions,
+  getGarageProfile,
+  getGarageRendezVous,
+  getHistoriques,
+  getHorairesByGarage,
+  getJours,
+  getStatusRendezVous,
+  getStoredAuth,
+  getVilles,
+  isJwtExpired,
+  isValidEmailFormat,
+  upsertGarageHoraire,
+  updateGaragePlanning,
+  updateGarageProfile,
+} from "../api/garageApi.js";

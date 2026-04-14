@@ -13,13 +13,20 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
-    const { login } = useContext(AuthConnexion);
+    const { login, user, token } = useContext(AuthConnexion);
+
+    // Redirection automatique si déjà connecté
+    React.useEffect(() => {
+        if (user && token && user.roles) {
+            redirectByRole(user.roles);
+        }
+    }, [user, token]);
 
     const redirectByRole = (roles = []) => {
         if (!Array.isArray(roles)) roles = [roles];
 
         if (roles.includes("ROLE_SUPER_ADMIN")) navigate("/dashboardSuperAdmin");
-        else if (roles.includes("ROLE_ADMIN")) navigate("/dashboardGarage");
+        else if (roles.includes("ROLE_ADMIN") || roles.includes("ROLE_GARAGE")) navigate("/dashboardGarage");
         else if (roles.includes("ROLE_USER")) navigate("/dashboardClient");
         else navigate("/");
     };

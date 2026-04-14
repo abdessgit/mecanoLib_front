@@ -20,10 +20,28 @@
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.logo-text {
   font-size: 22px;
   font-weight: bold;
-  color: #ffd54f;
-  cursor: pointer;
+  color: #ffffff;
 }
 
 /* BOUTONS */

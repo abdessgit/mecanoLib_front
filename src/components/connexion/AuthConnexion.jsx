@@ -1,6 +1,14 @@
 import React, { createContext, useState, useEffect } from "react";
+import { setStoredAuth, clearStoredAuth } from "../../api/garageApi.js";
 
 export const AuthConnexion = createContext();
+
+function mapRolesToAppRole(roles) {
+    if (!Array.isArray(roles)) roles = [roles];
+    if (roles.includes("ROLE_SUPER_ADMIN")) return "superadmin";
+    if (roles.includes("ROLE_ADMIN") || roles.includes("ROLE_GARAGE")) return "garage";
+    return "client";
+}
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(
@@ -25,6 +33,9 @@ export const AuthProvider = ({ children }) => {
             const data = await res.json();
             setUser(data);
             localStorage.setItem("user", JSON.stringify(data));
+            const role = mapRolesToAppRole(data?.roles);
+            setStoredAuth({ token: jwt, role, remember: true, profile: data });
+            return data;
         } catch (err) {
             logout();
         }
@@ -55,9 +66,9 @@ export const AuthProvider = ({ children }) => {
             setToken(data.token);
 
             // Récupérer user complet
-            await fetchUser(data.token);
+            const userData = await fetchUser(data.token);
 
-            return { success: true, user: JSON.parse(localStorage.getItem("user")) };
+            return { success: true, user: userData };
 
         } catch (err) {
             return { success: false, message: "Serveur inaccessible" };
@@ -69,6 +80,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("user");
         setToken(null);
         setUser(null);
+        clearStoredAuth();
     };
 
     return (

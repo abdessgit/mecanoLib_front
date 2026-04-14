@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Wrench } from "lucide-react";
 import "./Footer.css";
 
 export default function Footer() {
@@ -13,7 +14,9 @@ export default function Footer() {
 
                     <div className="footer-brand">
                         <Link to="/HomePage" className="footer-logo">
-                            <div className="footer-logo-icon">🔧</div>
+                            <div className="footer-logo-icon">
+                                <Wrench size={22} />
+                            </div>
                             <span className="footer-logo-text">MecanoLib</span>
                         </Link>
 
