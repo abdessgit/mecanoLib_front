@@ -117,7 +117,16 @@ export default function BookingPage() {
     };
 
     // affiche de planning 
-
+    // MOCK planning très simple (3 créneaux)
+    useEffect(() => {
+        if (step === 4) {
+            setPlanning([
+                { id: 1, date: "2026-04-15", heure: "09:00" },
+                { id: 2, date: "2026-04-15", heure: "11:00" },
+                { id: 3, date: "2026-04-15", heure: "14:00" }
+            ]);
+        }
+    }, [step]);
     // Sélection d’un créneau → redirection vers auth
     const handleSelectCreneau = (creneau) => {
         if (!selectedCategorie || !selectedPrestation || !selectedGarage) {

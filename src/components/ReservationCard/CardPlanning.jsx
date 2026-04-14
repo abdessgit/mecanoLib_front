@@ -1,19 +1,17 @@
 export default function CardPlanning({ prestations, onSelectCreneau }) {
     return (
-        <div className="card">
-            <h2>Planning disponible</h2>
+        <div className="planning-container">
+            <h2>Choisissez un créneau</h2>
 
-            <div className="list">
-                {prestations.length === 0 && <p>Aucun créneau disponible.</p>}
-                {prestations.map((p, index) => (
-                    <div
-                        key={index}
-                        className="planning-item"
-                        onClick={() => onSelectCreneau(p)}
-                        style={{ cursor: "pointer" }}
+            <div className="creneaux-grid">
+                {prestations.map((creneau) => (
+                    <button
+                        key={creneau.id}
+                        className="creneau-btn"
+                        onClick={() => onSelectCreneau(creneau)}
                     >
-                        {p.date} à {p.heure}
-                    </div>
+                        {creneau.date} à {creneau.heure}
+                    </button>
                 ))}
             </div>
         </div>
