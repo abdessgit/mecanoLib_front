@@ -1,18 +1,20 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
-import { clearStoredAuth, getDefaultDashboardPath, getStoredAuth, isJwtExpired } from "../../services/api"
+import * as apiModule from "../../services/api"
+
+const api = apiModule.default ?? apiModule
 
 function Header() {
     const location = useLocation()
     const navigate = useNavigate()
-    const { token, role } = getStoredAuth()
-    const isAuthenticated = Boolean(token) && !isJwtExpired(token)
+    const { token, role } = api.getStoredAuth()
+    const isAuthenticated = Boolean(token) && !api.isJwtExpired(token)
 
     if (token && !isAuthenticated) {
-        clearStoredAuth()
+        api.clearStoredAuth()
     }
 
     const handleLogout = () => {
-        clearStoredAuth()
+        api.clearStoredAuth()
         navigate("/connexion")
     }
 
@@ -64,7 +66,7 @@ function Header() {
                                     className={({ isActive }) =>
                                         "nav-link" + (isActive ? " active fw-semibold text-warning" : "")
                                     }
-                                    to={getDefaultDashboardPath(role)}
+                                    to={api.getDefaultDashboardPath(role)}
                                 >
                                     Mon espace
                                 </NavLink>

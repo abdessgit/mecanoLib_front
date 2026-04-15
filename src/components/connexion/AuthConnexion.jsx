@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import { API_BASE_URL } from "../../services/api";
+import { clearStoredAuth, getProfile, getStoredAuth, loginUser } from "../../services/apiCompat";
 
 export const AuthConnexion = createContext();
 
@@ -7,9 +7,10 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(
         JSON.parse(localStorage.getItem("user")) || null
     );
-    const [token, setToken] = useState(localStorage.getItem("token") || null);
+    const [token, setToken] = useState(getStoredAuth().token || null);
 
     const logout = useCallback(() => {
+        clearStoredAuth();
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setToken(null);
@@ -18,16 +19,12 @@ export const AuthProvider = ({ children }) => {
 
     const fetchUser = useCallback(async (jwt) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/users/connecter`, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${jwt}`
-                },
-            });
-            if (!res.ok) throw new Error("Token invalide ou expiré");
-            const data = await res.json();
+            const data = await getProfile(jwt);
+            
             setUser(data);
             localStorage.setItem("user", JSON.stringify(data));
+            localStorage.setItem("token", jwt);
+            setToken(jwt);
         } catch {
             logout();
         }
@@ -35,40 +32,40 @@ export const AuthProvider = ({ children }) => {
 
     // Récupération de l'utilisateur si token existant
     useEffect(() => {
-        if (token) fetchUser(token);
+        if (!token) return;
+        const task = setTimeout(() => {
+            fetchUser(token);
+        }, 0);
+
+        return () => clearTimeout(task);
     }, [token, fetchUser]);
 
     const login = async ({ emailUtilisateur, mdpUtilisateur, authCode }) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ emailUtilisateur, mdpUtilisateur, authCode })
+            const result = await loginUser({
+                email: emailUtilisateur,
+                password: mdpUtilisateur,
+                otp: authCode,
             });
 
-            const data = await res.json();
-
-            // Backend demande code 2FA
-            if (res.status === 403 && data.message?.includes("2FA")) {
-                return { need2FA: true, message: data.message };
+            if (result?.requires2fa) {
+                return { need2FA: true, message: result.error || "Code 2FA requis" };
             }
 
-            // Mauvais login
-            if (!res.ok) {
-                return { success: false, message: data.message || "Email ou mot de passe invalide" };
+            const { token: storedToken } = getStoredAuth();
+            const resolvedToken = result?.token || storedToken;
+
+            if (!resolvedToken) {
+                return { success: false, message: "Jeton de connexion absent" };
             }
 
-            // Login OK → token reçu
-            localStorage.setItem("token", data.token);
-            setToken(data.token);
+            await fetchUser(resolvedToken);
+            const userData = JSON.parse(localStorage.getItem("user") || "null");
 
-            // Récupérer user complet
-            await fetchUser(data.token);
+            return { success: true, user: userData };
 
-            return { success: true, user: JSON.parse(localStorage.getItem("user")) };
-
-        } catch {
-            return { success: false, message: "Serveur inaccessible" };
+        } catch (err) {
+            return { success: false, message: err?.message || "Serveur inaccessible" };
         }
     };
 

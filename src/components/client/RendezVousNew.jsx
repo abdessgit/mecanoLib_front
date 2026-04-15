@@ -1,9 +1,12 @@
 
 import React, { useState } from 'react';
-import { getStoredAuth, getProfile, createRendezVous } from '../../services/api';
+import { getStoredAuth, createRendezVous } from '../../services/api';
 
 
 const RendezVousNew = () => {
+  const [garageId, setGarageId] = useState("");
+  const [vehiculeId, setVehiculeId] = useState("");
+  const [prestationId, setPrestationId] = useState("");
   const [date, setDate] = useState("");
   const [heure, setHeure] = useState("");
   const [motif, setMotif] = useState("");
@@ -19,18 +22,24 @@ const RendezVousNew = () => {
     try {
       const { token } = getStoredAuth();
       if (!token) throw new Error("Vous devez être connecté.");
-      const profile = await getProfile(token);
-      const clientId = profile?.id || profile?.data?.id;
-      if (!clientId) throw new Error("Impossible de récupérer l'identifiant client.");
+
+      if (!garageId || !vehiculeId || !prestationId) {
+        throw new Error("Renseignez garage, vehicule et prestation.");
+      }
 
       const data = {
-        clientId,
+        garageId,
+        vehiculeId,
+        prestationId,
         date,
         heure,
         motif,
       };
       await createRendezVous(token, data);
       setSuccess("Votre demande de rendez-vous a bien été envoyée.");
+      setGarageId("");
+      setVehiculeId("");
+      setPrestationId("");
       setDate("");
       setHeure("");
       setMotif("");
@@ -47,6 +56,18 @@ const RendezVousNew = () => {
       {success && <div className="alert alert-success">{success}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
       <form onSubmit={handleSubmit}>
+        <div className="mb-3">
+          <label className="form-label">ID Garage</label>
+          <input type="number" className="form-control" value={garageId} onChange={e => setGarageId(e.target.value)} required />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">ID Vehicule</label>
+          <input type="number" className="form-control" value={vehiculeId} onChange={e => setVehiculeId(e.target.value)} required />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">ID Prestation</label>
+          <input type="number" className="form-control" value={prestationId} onChange={e => setPrestationId(e.target.value)} required />
+        </div>
         <div className="mb-3">
           <label className="form-label">Date</label>
           <input type="date" className="form-control" name="date" value={date} onChange={e => setDate(e.target.value)} required />

@@ -48,11 +48,11 @@ const TousRendezVous = () => {
             <tr><td colSpan={5} className="text-center">Aucun rendez-vous trouvé.</td></tr>
           )}
           {rdvs.map((rdv, idx) => (
-            <tr key={rdv.id || idx}>
+            <tr key={rdv.idRdv || rdv.id || idx}>
               <td>{rdv.date || rdv.date_rdv || rdv.dateDebut?.split(" ")?.[0] || "-"}</td>
               <td>{rdv.heure || rdv.heure_rdv || rdv.dateDebut?.split(" ")?.[1] || "-"}</td>
-              <td>{rdv.garage?.nom_garage || rdv.garage_name || rdv.garage || "-"}</td>
-              <td>{rdv.motif || rdv.service || rdv.prestation || "-"}</td>
+              <td>{rdv.garage?.nomGarage || rdv.garage?.nom_garage || rdv.garage_name || rdv.garage || "-"}</td>
+              <td>{rdv.commentaireClient || rdv.motif || rdv.service || rdv.prestation || "-"}</td>
               <td>{rdv.status || rdv.etat || "-"}</td>
             </tr>
           ))}

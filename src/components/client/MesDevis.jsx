@@ -51,9 +51,9 @@ const MesDevis = () => {
             <tr><td colSpan={4} className="text-center">Aucun devis trouvé.</td></tr>
           )}
           {devis.map((devisItem, idx) => (
-            <tr key={devisItem.id || idx}>
+            <tr key={devisItem.id || devisItem.reference || idx}>
               <td>{devisItem.date || devisItem.date_devis || "-"}</td>
-              <td>{devisItem.garage?.nom_garage || devisItem.garage_name || devisItem.garage || "-"}</td>
+              <td>{devisItem.garage?.nomGarage || devisItem.garage?.nom_garage || devisItem.garage_name || devisItem.garage || "-"}</td>
               <td>{devisItem.montant ? `${devisItem.montant} €` : "-"}</td>
               <td>{devisItem.status || devisItem.etat || "-"}</td>
             </tr>

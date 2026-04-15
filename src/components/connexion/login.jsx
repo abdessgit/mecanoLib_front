@@ -18,7 +18,9 @@ const Login = () => {
     const redirectByRole = (roles = []) => {
         if (!Array.isArray(roles)) roles = [roles];
 
-        if (roles.includes("ROLE_SUPER_ADMIN")) navigate("/dashboardSuperAdmin");
+       
+
+          if (roles.includes("ROLE_SUPER_ADMIN")) navigate("/dashboardSuperAdmin");
         else if (roles.includes("ROLE_ADMIN")) navigate("/dashboardGarage");
         else if (roles.includes("ROLE_USER")) navigate("/dashboardClient");
         else navigate("/");

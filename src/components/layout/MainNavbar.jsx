@@ -1,14 +1,16 @@
 import { Link, NavLink, useNavigate } from "react-router-dom"
-import { clearStoredAuth, getDefaultDashboardPath, getStoredAuth, isJwtExpired } from "../../services/api"
+import * as apiModule from "../../services/api"
 import "./MainNavbar.css"
+
+const api = apiModule.default ?? apiModule
 
 function MainNavbar() {
     const navigate = useNavigate()
-    const { token, role } = getStoredAuth()
-    const isAuthenticated = Boolean(token) && !isJwtExpired(token)
+    const { token, role } = api.getStoredAuth()
+    const isAuthenticated = Boolean(token) && !api.isJwtExpired(token)
 
     const handleLogout = () => {
-        clearStoredAuth()
+        api.clearStoredAuth()
         navigate("/auth")
     }
 
@@ -27,7 +29,7 @@ function MainNavbar() {
                 <div className="main-navbar-actions">
                     {isAuthenticated ? (
                         <>
-                            <Link to={getDefaultDashboardPath(role)} className="main-navbar-btn secondary">Mon espace</Link>
+                            <Link to={api.getDefaultDashboardPath(role)} className="main-navbar-btn secondary">Mon espace</Link>
                             <button type="button" className="main-navbar-btn" onClick={handleLogout}>Deconnexion</button>
                         </>
                     ) : (

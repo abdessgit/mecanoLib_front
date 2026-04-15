@@ -51,9 +51,9 @@ const MesFactures = () => {
             <tr><td colSpan={4} className="text-center">Aucune facture trouvée.</td></tr>
           )}
           {factures.map((facture, idx) => (
-            <tr key={facture.id || idx}>
+            <tr key={facture.id || facture.reference || idx}>
               <td>{facture.date || facture.date_facture || "-"}</td>
-              <td>{facture.garage?.nom_garage || facture.garage_name || facture.garage || "-"}</td>
+              <td>{facture.garage?.nomGarage || facture.garage?.nom_garage || facture.garage_name || facture.garage || "-"}</td>
               <td>{facture.montant ? `${facture.montant} €` : "-"}</td>
               <td>{facture.status || facture.etat || "-"}</td>
             </tr>

@@ -8,6 +8,14 @@ function ProfilClient() {
     const [error, setError] = useState("")
 
     useEffect(() => {
+        if (!token) {
+            const task = setTimeout(() => {
+                setError("Vous devez etre connecte.")
+                setLoading(false)
+            }, 0)
+            return () => clearTimeout(task)
+        }
+
         getProfile(token)
             .then(setProfile)
             .catch(() => setError("Impossible de charger le profil."))

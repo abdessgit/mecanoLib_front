@@ -1,13 +1,5 @@
 import { useState, useEffect } from "react"
-import { getStoredAuth } from "../../services/api"
-
-async function fetchDevis(token) {
-    const res = await fetch("/api/v1/user/devis", {
-        headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!res.ok) throw new Error("Devis indisponibles")
-    return res.json()
-}
+import { getClientDevisSnapshot, getStoredAuth } from "../../services/api"
 
 function statusBadge(s) {
     const map = { accepte: "success", refuse: "danger", en_attente: "warning" }
@@ -22,9 +14,17 @@ function DevisClient() {
     const [error, setError] = useState("")
 
     useEffect(() => {
-        fetchDevis(token)
-            .then((data) => setDevis(Array.isArray(data) ? data : data?.data ?? []))
-            .catch(() => setError("La liste des devis n'est pas encore disponible."))
+        if (!token) {
+            const task = setTimeout(() => {
+                setError("Vous devez etre connecte.")
+                setLoading(false)
+            }, 0)
+            return () => clearTimeout(task)
+        }
+
+        getClientDevisSnapshot(token)
+            .then((data) => setDevis(Array.isArray(data) ? data : []))
+            .catch((err) => setError(err?.message || "La liste des devis n'est pas encore disponible."))
             .finally(() => setLoading(false))
     }, [token])
 
@@ -65,7 +65,7 @@ function DevisClient() {
                             {devis.map((d, i) => (
                                 <tr key={d.id || i}>
                                     <td className="text-muted small">{d.id || i + 1}</td>
-                                    <td>{d.garage?.nom_garage || d.garage || "—"}</td>
+                                    <td>{d.garage?.nomGarage || d.garage?.nom_garage || d.garage || "—"}</td>
                                     <td>{d.description || d.prestation || "—"}</td>
                                     <td>{d.montant != null ? `${d.montant} €` : "—"}</td>
                                     <td className="small text-muted">

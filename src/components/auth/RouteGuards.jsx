@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom"
-import { clearStoredAuth, getDefaultDashboardPath, getStoredAuth, isJwtExpired } from "../../services/api"
+import { clearStoredAuth, getDefaultDashboardPath, getStoredAuth, isJwtExpired } from "../../services/apiCompat"
 
 
 export function ProtectedRoute({ children, allowedRoles }) {

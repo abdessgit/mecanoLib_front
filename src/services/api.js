@@ -99,9 +99,9 @@ export function clearStoredAuth() {
 function normalizeRole(rawRole) {
     const role = String(rawRole || "").toLowerCase()
     if (role.includes("super_admin")) return "super_admin"
-    if (role.includes("admin") || role.includes("garage")) return "garage"
+    if (role.includes("admin") || role.includes("garage") || role.includes("garagiste")) return "garage"
     if (role.includes("user") || role.includes("client")) return "client"
-    return "client"
+    return ""
 }
 
 export function getDefaultDashboardPath(role) {
@@ -126,7 +126,23 @@ export function isJwtExpired(token) {
 }
 
 function extractRoleFromPayload(data) {
-    const roleCandidate = data?.role || data?.user?.role || data?.roles?.[0] || data?.user?.roles?.[0]
+    const roleCandidate =
+        data?.role?.nomRole ||
+        data?.role ||
+        data?.user?.role?.nomRole ||
+        data?.user?.role ||
+        data?.roles?.[0]?.nomRole ||
+        data?.roles?.[0] ||
+        data?.user?.roles?.[0]?.nomRole ||
+        data?.user?.roles?.[0] ||
+        data?.nomRole ||
+        data?.typeCompte ||
+        data?.user?.typeCompte ||
+        data?.utilisateur?.role?.nomRole ||
+        data?.utilisateur?.role ||
+        data?.utilisateur?.roles?.[0]?.nomRole ||
+        data?.utilisateur?.roles?.[0]
+
     return normalizeRole(roleCandidate)
 }
 
@@ -188,8 +204,17 @@ export async function getProfile(token) {
         headers: buildAuthHeaders(token),
     })
 
+    const remember = localStorage.getItem(AUTH_REMEMBER_KEY) === "1"
+    const { role: storedRole } = getStoredAuth()
+    const resolvedRole = extractRoleFromPayload(data) || storedRole || extractRoleFromJwt(token)
+
+    if (token && resolvedRole) {
+        setStoredAuth({ token, role: resolvedRole, remember })
+    }
+
     return {
         ...data,
+        role: resolvedRole,
         id: data?.userId,
         nom: data?.nom || "",
         prenom: data?.prenom || "",
@@ -540,10 +565,29 @@ export async function addGarageRdvHistorique(token, rdvId, data) {
 }
 
 export async function createGarageRdv(token, data) {
+    const vehiculeId = Number(data?.vehiculeId)
+    if (!Number.isInteger(vehiculeId) || vehiculeId <= 0) {
+        throw new Error("vehiculeId est requis pour creer un rendez-vous garage")
+    }
+
+    if (!data?.dateDebut || !data?.dateFin) {
+        throw new Error("dateDebut et dateFin sont requis")
+    }
+
+    const start = new Date(data.dateDebut)
+    const end = new Date(data.dateFin)
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        throw new Error("Format de date invalide")
+    }
+
+    if (end <= start) {
+        throw new Error("La date de fin doit etre apres la date de debut")
+    }
+
     return apiFetch("/api/v1/rdv", {
         method: "POST",
         headers: buildAuthHeaders(token),
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, vehiculeId }),
     })
 }
 

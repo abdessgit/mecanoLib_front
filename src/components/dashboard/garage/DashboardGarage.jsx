@@ -5,56 +5,13 @@ import * as apiModule from "../../../services/api.js";
 import "./DashboardGarage.css";
 const apiClient = { ...(apiModule.default || {}), ...apiModule };
 
-function get2FAMethods(client) {
-    const getStatus = client.get2faStatus || client.get2FAStatus;
-    const setup = client.setup2fa || client.setup2FA;
-    const verify = client.verify2fa || client.verify2FA;
-    const disable = client.disable2fa || client.disable2FA;
-
-    return { getStatus, setup, verify, disable };
-}
-
-async function safeJson(response) {
-    try {
-        return await response.json();
-    } catch {
-        return null;
+function getApiMethod(...names) {
+    for (const name of names) {
+        const fn = apiClient[name] || apiClient.default?.[name];
+        if (typeof fn === "function") return fn;
     }
-}
 
-async function fetch2faDirect(path, token, payload) {
-    const res = await fetch(`${API_BASE_URL}${path}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload || {}),
-    });
-
-    const data = await safeJson(res);
-    if (!res.ok) {
-        throw new Error(data?.message || data?.error || "Operation 2FA impossible.");
-    }
-    return data;
-}
-
-async function get2faStatusDirect(token) {
-    const res = await fetch(`${API_BASE_URL}/api/v1/users/connecter`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-    });
-    const data = await safeJson(res);
-    if (!res.ok) {
-        throw new Error(data?.message || data?.error || "Statut 2FA indisponible.");
-    }
-    if (typeof data?.enabled === "boolean") {
-        return data;
-    }
-    return { enabled: Boolean(data?.is2fa), ...data };
+    throw new Error(`Methode API indisponible: ${names.join("/")}`);
 }
 
 const RDV_STATUS_OPTIONS = ["En attente", "Confirmer", "Refuser", "Terminer"];
@@ -68,7 +25,6 @@ const DEFAULT_WEEK_DAYS = [
     { jourId: 6, libJour: "Samedi", isActive: false },
     { jourId: 7, libJour: "Dimanche", isActive: false },
 ];
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 
 function toIsoLocal(date) {
     const pad = (v) => String(v).padStart(2, "0");
@@ -129,111 +85,25 @@ function buildDemoRdvs() {
     ];
 }
 
-async function fetchGarageProfileDirect(token, userId) {
-    const suffix = userId ? `?userId=${encodeURIComponent(userId)}` : "";
-    const res = await fetch(`${API_BASE_URL}/api/v1/profil${suffix}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-    });
-
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-        throw new Error(data?.message || data?.error || "Profil garage introuvable");
-    }
-    return data;
-}
-
 async function getGarageProfileSafe(token, userId) {
-    const fn = apiClient.getGarageProfile || apiClient.default?.getGarageProfile;
-    if (typeof fn === "function") {
-        return fn(token, userId ? { userId } : {});
-    }
-    return fetchGarageProfileDirect(token, userId);
-}
-
-async function fetchGarageRdvListDirect(token, garageId, userId) {
-    const params = new URLSearchParams();
-    if (garageId) params.set("garageId", garageId);
-    if (userId) params.set("userId", userId);
-    const suffix = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetch(`${API_BASE_URL}/api/v1/rdv${suffix}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-        throw new Error(data?.message || data?.error || "Liste RDV indisponible");
-    }
-    return data;
+    return getApiMethod("getGarageProfile")(token, userId ? { userId } : {});
 }
 
 async function getGarageRdvListSafe(token, garageId, userId) {
-    const fn = apiClient.getGarageRdvList || apiClient.default?.getGarageRdvList;
-    if (typeof fn === "function") {
-        return fn(token, garageId, userId ? { userId } : {});
-    }
-    return fetchGarageRdvListDirect(token, garageId, userId);
-}
-
-async function fetchGaragePlanningDirect(token, garageId, userId) {
-    const params = new URLSearchParams();
-    if (garageId) params.set("garageId", garageId);
-    if (userId) params.set("userId", userId);
-    const suffix = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetch(`${API_BASE_URL}/api/v1/planning/semaine${suffix}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-        throw new Error(data?.message || data?.error || "Planning indisponible");
-    }
-    return data;
+    return getApiMethod("getGarageRdvList")(token, garageId, userId ? { userId } : {});
 }
 
 async function getGaragePlanningSafe(token, garageId, userId) {
-    const fn = apiClient.getGaragePlanningSemaine || apiClient.default?.getGaragePlanningSemaine;
-    if (typeof fn === "function") {
-        return fn(token, { garageId, userId });
-    }
-    return fetchGaragePlanningDirect(token, garageId, userId);
+    return getApiMethod("getGaragePlanningSemaine")(token, { garageId, userId });
 }
 
 async function updateGarageHorairesSafe(token, data) {
-    const fn = apiClient.updateGarageHoraires || apiClient.default?.updateGarageHoraires;
-    if (typeof fn === "function") {
-        return fn(token, data);
-    }
-
-    const res = await fetch(`${API_BASE_URL}/api/v1/horaires/ouvertures-fermetures`, {
-        method: "PATCH",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(data),
-    });
-
-    const payload = await safeJson(res);
-    if (!res.ok) {
-        throw new Error(payload?.message || payload?.error || "Impossible de sauvegarder les horaires.");
-    }
-    return payload;
+    return getApiMethod("updateGarageHoraires")(token, data);
 }
 
 export default function GarageRdv() {
     const navigate = useNavigate();
     const { user, logout, token } = useContext(AuthConnexion);
-    const twoFA = useMemo(() => get2FAMethods(apiClient), []);
 
     const [is2FARequired, setIs2FARequired] = useState(false);
     const [is2FAActivated, setIs2FAActivated] = useState(false);
@@ -394,8 +264,8 @@ export default function GarageRdv() {
         setSelectedRdv(null);
         setNewRdvForm({
             vehiculeId: "",
-            dateDebut: dateDebut.toISOString().slice(0, 16),
-            dateFin: dateFin.toISOString().slice(0, 16),
+            dateDebut: toIsoLocal(dateDebut).slice(0, 16),
+            dateFin: toIsoLocal(dateFin).slice(0, 16),
             duration: 60,
         });
         setShowRdvForm(true);
@@ -422,9 +292,7 @@ export default function GarageRdv() {
                 let resolvedUserId = user?.userId || user?.id || user?.idUtilisateur || null;
 
                 try {
-                    const status = typeof twoFA.getStatus === "function"
-                        ? await twoFA.getStatus(token)
-                        : await get2faStatusDirect(token);
+                    const status = await getApiMethod("get2faStatus", "get2FAStatus")(token);
                     setIs2FAActivated(Boolean(status?.enabled));
                     resolvedUserId = status?.userId || status?.id || resolvedUserId;
                 } catch {
@@ -497,16 +365,14 @@ export default function GarageRdv() {
         };
 
         loadDashboardData();
-    }, [token, user?.id, user?.userId, user?.idUtilisateur, user?.email, user?.emailUtilisateur, twoFA]);
+    }, [token, user?.id, user?.userId, user?.idUtilisateur, user?.email, user?.emailUtilisateur]);
 
     const activer2FA = async () => {
         setMessageActivation("");
         setMessageValidation("");
         try {
             const email = user?.email || user?.emailUtilisateur;
-            const data = typeof twoFA.setup === "function"
-                ? await twoFA.setup(token, { email })
-                : await fetch2faDirect("/api/v1/users/activer_2fa", token, { email });
+            const data = await getApiMethod("setup2fa", "setup2FA")(token, { email });
             setMessageActivation(data?.message || "Scanne le QR Code puis saisis ton code 2FA.");
             setIs2FARequired(true);
         } catch (err) {
@@ -519,11 +385,7 @@ export default function GarageRdv() {
         setMessageValidation("");
         try {
             const email = user?.email || user?.emailUtilisateur;
-            if (typeof twoFA.verify === "function") {
-                await twoFA.verify(token, code2FA, { email });
-            } else {
-                await fetch2faDirect("/api/v1/users/verify_2fa", token, { email, code: code2FA });
-            }
+            await getApiMethod("verify2fa", "verify2FA")(token, code2FA, { email });
             setMessageValidation("2FA valide avec succes.");
             setIs2FARequired(false);
             setIs2FAActivated(true);
@@ -537,11 +399,7 @@ export default function GarageRdv() {
         setMessageValidation("");
         try {
             const email = user?.email || user?.emailUtilisateur;
-            if (typeof twoFA.disable === "function") {
-                await twoFA.disable(token, { mdp: "", code: code2FA || "000000", email });
-            } else {
-                await fetch2faDirect("/api/v1/users/desactiver_2fa", token, { email, code: code2FA || "000000", mdp: "" });
-            }
+            await getApiMethod("disable2fa", "disable2FA")(token, { mdp: "", code: code2FA || "000000", email });
             setMessageValidation("2FA desactive.");
             setIs2FARequired(false);
             setIs2FAActivated(false);
@@ -666,13 +524,36 @@ export default function GarageRdv() {
 
     const createNewRdv = async (e) => {
         e.preventDefault();
+        setGlobalError("");
+        setMessageValidation("");
+
+        const vehiculeId = Number(newRdvForm.vehiculeId);
+        if (!Number.isInteger(vehiculeId) || vehiculeId <= 0) {
+            setGlobalError("Veuillez saisir un ID vehicule valide.");
+            return;
+        }
+
+        if (!newRdvForm.dateDebut || !newRdvForm.dateFin) {
+            setGlobalError("Veuillez renseigner la date de debut et de fin.");
+            return;
+        }
+
+        if (new Date(newRdvForm.dateFin) <= new Date(newRdvForm.dateDebut)) {
+            setGlobalError("La date de fin doit etre apres la date de debut.");
+            return;
+        }
+
         try {
             await apiClient.createGarageRdv(token, {
+                vehiculeId,
                 dateDebut: newRdvForm.dateDebut,
                 dateFin: newRdvForm.dateFin,
+                commentaire: "",
+                motifRefus: "",
             });
             setMessageValidation("Rendez-vous cree avec succes.");
             setShowRdvForm(false);
+            setNewRdvForm({ vehiculeId: "", dateDebut: "", dateFin: "", duration: 60 });
             
             // Reload RDVs
             const rdvRes = await getGarageRdvListSafe(token, profile?.idGarage, connectedUserId);
@@ -1124,6 +1005,16 @@ export default function GarageRdv() {
                                         <button type="button" className="btn ol-close-btn" onClick={() => setShowRdvForm(false)}>✕</button>
                                     </div>
                                     <div style={{ display: "grid", gap: "10px" }}>
+                                        <label>
+                                            ID vehicule
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={newRdvForm.vehiculeId}
+                                                onChange={(e) => setNewRdvForm((p) => ({ ...p, vehiculeId: e.target.value }))}
+                                                required
+                                            />
+                                        </label>
                                         <label>
                                             Date debut
                                             <input
