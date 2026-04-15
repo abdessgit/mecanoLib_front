@@ -104,12 +104,8 @@ function normalizeRole(rawRole) {
     return ""
 }
 
-export function getDefaultDashboardPath(role) {
-    const normalized = normalizeRole(role)
-    if (normalized === "super_admin") return "/dashboardSuperAdmin"
-    if (normalized === "garage") return "/dashboardGarage"
-    return "/dashboardClient"
-}
+
+// La redirection du dashboard par défaut est maintenant gérée dans le composant login.
 
 export function isJwtExpired(token) {
     if (!token) return true
@@ -645,7 +641,6 @@ export default {
     getClientDevisSnapshot,
     getClientFacturesSnapshot,
     isJwtExpired,
-    getDefaultDashboardPath,
 }
 
 export { API_BASE_URL }
