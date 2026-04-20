@@ -595,6 +595,33 @@ export async function changePassword(token, data) {
     })
 }
 
+export async function validate2faCode({ email, code }) {
+    const payload = {
+        emailUtilisateur: email,
+        authCode: code,
+    }
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/2fa`, {
+        method: "POST",
+        headers: buildJsonHeaders(),
+        body: JSON.stringify(payload),
+    })
+    const data = await safeJson(response)
+    if (!response.ok) {
+        const message = data?.message || data?.error || "Code 2FA invalide"
+        throw new Error(message)
+    }
+    const token = data?.token || data?.jwt || ""
+    const role = extractRoleFromPayload(data)
+    if (token) {
+        setStoredAuth({ token, role, remember: true })
+    }
+    return {
+        token,
+        role,
+        user: data?.user || null,
+    }
+}
+
 export default {
     getStoredAuth,
     setStoredAuth,

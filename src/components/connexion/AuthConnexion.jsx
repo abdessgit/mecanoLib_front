@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import { clearStoredAuth, getProfile, getStoredAuth, loginUser } from "../../services/apiCompat";
+import { clearStoredAuth, getProfile, getStoredAuth, loginUser } from "../../services/api";
 
 export const AuthConnexion = createContext();
 

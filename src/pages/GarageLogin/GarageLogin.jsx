@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Button, Input, Card, CardContent } from '../../components';
 import { useApp } from '../../context/AppContext';
 import './GarageLogin.css';
+import { validate2faCode } from '../../services/api';
 
 const GarageLogin = () => {
   const navigate = useNavigate();
@@ -15,6 +16,9 @@ const GarageLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [need2fa, setNeed2fa] = useState(false);
+  const [code2fa, setCode2fa] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
 
   // Si déjà connecté, rediriger vers le dashboard
   if (garageAuth.isAuthenticated) {
@@ -27,17 +31,36 @@ const GarageLogin = () => {
     setError('');
     setIsLoading(true);
 
+    if (need2fa) {
+      // Validation du code 2FA
+      try {
+        await validate2faCode({ email: pendingEmail, code: code2fa });
+        navigate('/garage/dashboard');
+      } catch (err) {
+        setError(err.message || 'Code 2FA invalide');
+      }
+      setIsLoading(false);
+      return;
+    }
+
     // Simulation délai réseau
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const success = loginGarage({ email, password });
-    
-    if (success) {
+    try {
+      const { requires2fa } = await window.loginUser
+        ? window.loginUser({ email, password })
+        : { requires2fa: false };
+      if (requires2fa) {
+        setNeed2fa(true);
+        setPendingEmail(email);
+        setIsLoading(false);
+        return;
+      }
+      // Si pas de 2FA, login classique
       navigate('/garage/dashboard');
-    } else {
-      setError('Email ou mot de passe incorrect');
+    } catch (err) {
+      setError(err.message || 'Email ou mot de passe incorrect');
     }
-    
     setIsLoading(false);
   };
 
@@ -114,6 +137,7 @@ const GarageLogin = () => {
                     placeholder="garage@example.com"
                     icon={Mail}
                     required
+                    disabled={need2fa}
                   />
                 </div>
 
@@ -127,16 +151,31 @@ const GarageLogin = () => {
                       placeholder="••••••••"
                       icon={Lock}
                       required
+                      disabled={need2fa}
                     />
                     <button
                       type="button"
                       className="garage-login-password-toggle"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={need2fa}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
+                {need2fa && (
+                  <div className="garage-login-form-group">
+                    <Input
+                      label="Code 2FA reçu par email"
+                      type="text"
+                      value={code2fa}
+                      onChange={(e) => setCode2fa(e.target.value)}
+                      placeholder="Code 2FA"
+                      icon={Lock}
+                      required
+                    />
+                  </div>
+                )}
 
                 <div className="garage-login-options">
                   <label className="garage-login-remember">
@@ -152,9 +191,9 @@ const GarageLogin = () => {
                   type="submit"
                   className="garage-login-submit"
                   loading={isLoading}
-                  disabled={!email || !password}
+                  disabled={(!email || !password) && !need2fa}
                 >
-                  {isLoading ? 'Connexion...' : 'Se connecter'}
+                  {isLoading ? (need2fa ? 'Vérification...' : 'Connexion...') : (need2fa ? 'Valider le code 2FA' : 'Se connecter')}
                   {!isLoading && <ArrowRight size={18} />}
                 </Button>
 

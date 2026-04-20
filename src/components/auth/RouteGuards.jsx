@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom"
-import { clearStoredAuth, getDefaultDashboardPath, getStoredAuth, isJwtExpired } from "../../services/apiCompat"
+import { clearStoredAuth, getStoredAuth, isJwtExpired } from "../../services/api"
 
 
 export function ProtectedRoute({ children, allowedRoles }) {
@@ -11,17 +11,21 @@ export function ProtectedRoute({ children, allowedRoles }) {
     }
 
     if (Array.isArray(allowedRoles) && allowedRoles.length > 0 && role && !allowedRoles.includes(role)) {
-        return <Navigate to={getDefaultDashboardPath(role)} replace />;
+        // Redirection par défaut si le rôle n'est pas autorisé
+        // À adapter selon la logique métier souhaitée (ici, page d'accueil)
+        return <Navigate to="/" replace />;
     }
 
     return children;
 }
 
 export function GuestRoute({ children }) {
-    const { token, role } = getStoredAuth()
+    const { token } = getStoredAuth()
 
     if (token && !isJwtExpired(token)) {
-        return <Navigate to={getDefaultDashboardPath(role)} replace />
+        // Redirection par défaut si déjà connecté
+        // À adapter selon la logique métier souhaitée (ici, page d'accueil)
+        return <Navigate to="/" replace />
     }
 
     if (token && isJwtExpired(token)) {

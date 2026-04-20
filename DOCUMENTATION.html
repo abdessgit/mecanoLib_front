@@ -440,7 +440,7 @@
   <!-- HEADER -->
   <div class="doc-header">
     <h1>🔧 MecanoLib</h1>
-    <p>Documentation complète — Application de prise de rendez-vous pour garages automobiles</p>
+    <p>Yo, bienvenue sur la doc de MecanoLib ! Ici, tu vas trouver tout ce qu’il te faut pour piger comment marche l’appli de prise de rendez-vous pour les garages. Pose-toi, c’est simple et cool.</p>
     <div class="badge-row">
       <span class="badge">React 19.2</span>
       <span class="badge">Vite 8.0</span>
@@ -455,27 +455,27 @@
   <div class="section" id="architecture">
     <h2 class="section-title">
       <span class="section-icon icon-blue">🏗️</span>
-      1. Architecture générale
+      1. Comment c’est foutu ?
     </h2>
 
-    <pre><code>AppProvider (AppContext)
-  └── BrowserRouter
-        └── AnimatedRoutes (AnimatePresence — transitions de page)
-              ├── MainLayout  →  Navbar + &lt;page&gt; + Footer
-              └── CleanLayout →  &lt;page&gt; seule (sans Navbar/Footer)</code></pre>
+    <pre><code>AppProvider (le cerveau de l’app)
+  └── BrowserRouter (pour bouger entre les pages)
+        └── AnimatedRoutes (ça gère les transitions stylées)
+              ├── MainLayout  →  Navbar + ta page + Footer
+              └── CleanLayout →  juste la page, sans chichi</code></pre>
 
-    <h3>Stack technique</h3>
+    <h3>Les outils qu’on utilise</h3>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Outil</th><th>Version</th><th>Rôle</th></tr></thead>
+        <thead><tr><th>Outil</th><th>Version</th><th>À quoi ça sert ?</th></tr></thead>
         <tbody>
-          <tr><td><code>React</code></td><td>19.2</td><td>Interface utilisateur</td></tr>
-          <tr><td><code>Vite</code></td><td>8.0</td><td>Build &amp; Dev server</td></tr>
-          <tr><td><code>React Router</code></td><td>7.13</td><td>Routage client</td></tr>
-          <tr><td><code>Framer Motion</code></td><td>12.38</td><td>Animations</td></tr>
-          <tr><td><code>Tailwind CSS</code></td><td>3.4</td><td>Styles utilitaires</td></tr>
-          <tr><td><code>lucide-react</code></td><td>1.7</td><td>Icônes</td></tr>
-          <tr><td><code>clsx + tailwind-merge</code></td><td>—</td><td>Fusion de classes CSS</td></tr>
+          <tr><td><code>React</code></td><td>19.2</td><td>Pour faire l’UI, tranquille</td></tr>
+          <tr><td><code>Vite</code></td><td>8.0</td><td>Pour builder et dev plus vite</td></tr>
+          <tr><td><code>React Router</code></td><td>7.13</td><td>Pour naviguer entre les pages easy</td></tr>
+          <tr><td><code>Framer Motion</code></td><td>12.38</td><td>Pour les anims qui claquent</td></tr>
+          <tr><td><code>Tailwind CSS</code></td><td>3.4</td><td>Pour le style direct dans le code</td></tr>
+          <tr><td><code>lucide-react</code></td><td>1.7</td><td>Pour les icônes stylées</td></tr>
+          <tr><td><code>clsx + tailwind-merge</code></td><td>—</td><td>Pour pas se prendre la tête avec les classes CSS</td></tr>
         </tbody>
       </table>
     </div>

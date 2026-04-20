@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { useSearchParams } from "react-router-dom"; // pour récupérer le token dans l'URL
+
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom"; // pour récupérer le token dans l'URL
 import { resetPassword as resetPasswordApi } from "../../services/api";
 
 const ResetPassword = () => {
@@ -8,13 +9,27 @@ const ResetPassword = () => {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
+
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token"); // récupère le token depuis /reset-password?token=xxxx
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!token) {
+            setError("Lien invalide ou expiré. Veuillez refaire une demande de réinitialisation.");
+        }
+    }, [token]);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
         setMessage("");
+
+        if (!token) {
+            setError("Lien invalide ou expiré. Veuillez refaire une demande de réinitialisation.");
+            return;
+        }
 
         if (password !== confirmPassword) {
             setError("Les mots de passe ne correspondent pas");
@@ -23,9 +38,12 @@ const ResetPassword = () => {
 
         try {
             const data = await resetPasswordApi(token, password);
-            setMessage(data?.message || "Mot de passe mis a jour.");
+            setMessage(data?.message || "Mot de passe mis à jour. Redirection...");
             setPassword("");
             setConfirmPassword("");
+            setTimeout(() => {
+                navigate("/auth");
+            }, 2000);
         } catch {
             setError("Erreur réseau, réessayez plus tard");
         }
@@ -45,6 +63,7 @@ const ResetPassword = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={!token}
                 />
                 <input
                     type="password"
@@ -52,8 +71,9 @@ const ResetPassword = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
+                    disabled={!token}
                 />
-                <button type="submit">Réinitialiser</button>
+                <button type="submit" disabled={!token}>Réinitialiser</button>
             </form>
         </div>
     );

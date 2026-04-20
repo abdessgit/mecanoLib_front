@@ -467,6 +467,28 @@ export default function GarageRdv() {
                 planning,
             });
 
+            // Recharge les horaires/planning après sauvegarde
+            try {
+                const planningRes = await getApiMethod("getGaragePlanningSemaine")(token, { garageId: profile?.idGarage, userId: connectedUserId });
+                if (Array.isArray(planningRes?.jours) && planningRes.jours.length > 0) {
+                    setWeekDays(planningRes.jours);
+                    const newDayHours = {};
+                    planningRes.jours.forEach((day) => {
+                        const h = day.horaires?.semaine1 || null;
+                        newDayHours[day.jourId] = {
+                            hreOuvreMatin: h?.hreOuvreMatin || "08:00",
+                            hreFermeMatin: h?.hreFermeMatin || "12:00",
+                            hreOuvreSoir: h?.hreOuvreSoir || "14:00",
+                            hreFermeSoir: h?.hreFermeSoir || "18:00",
+                            ferme: !day.isActive,
+                        };
+                    });
+                    setDayHours((prev) => ({ ...prev, ...newDayHours }));
+                }
+            } catch (e) {
+                // Optionnel : afficher une erreur si le rechargement échoue
+            }
+
             setIsEditingHoraires(false);
             setMessageValidation("Horaires enregistres avec succes.");
         } catch (err) {

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Button, Input, Card, CardContent } from '../../components';
 import { useApp } from '../../context/AppContext';
 import './ClientLogin.css';
+import { validate2faCode } from '../../services/api';
 
 const ClientLogin = () => {
   const navigate = useNavigate();
@@ -14,6 +15,9 @@ const ClientLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [need2fa, setNeed2fa] = useState(false);
+  const [code2fa, setCode2fa] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
 
   if (clientAuth.isAuthenticated) {
     navigate('/client/dashboard');
@@ -24,6 +28,18 @@ const ClientLogin = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+
+    if (need2fa) {
+      try {
+        await validate2faCode({ email: pendingEmail, code: code2fa });
+        navigate('/client/dashboard');
+      } catch (err) {
+        setError(err.message || 'Code 2FA invalide');
+      }
+      setIsLoading(false);
+      return;
+    }
+
     await new Promise(resolve => setTimeout(resolve, 1000));
     const result = loginClient({ email, password });
     if (result.success) {
@@ -102,6 +118,7 @@ const ClientLogin = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       className="client-login-input"
                       required
+                      disabled={need2fa}
                     />
                   </div>
                 </div>
@@ -116,35 +133,44 @@ const ClientLogin = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="client-login-input"
                       required
+                      disabled={need2fa}
                     />
                     <button
                       type="button"
                       className="client-login-eye-btn"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? 'Masquer' : 'Afficher'}
+                      disabled={need2fa}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
-
-                <div className="client-login-forgot">
-                  <a href="#">Mot de passe oublié ?</a>
-                </div>
-
-                {error && (
-                  <div className="client-login-error">
-                    {error}
+                {need2fa && (
+                  <div className="client-login-field">
+                    <div className="client-login-input-wrapper">
+                      <Lock size={18} className="client-login-input-icon" />
+                      <input
+                        type="text"
+                        placeholder="Code 2FA reçu par email"
+                        value={code2fa}
+                        onChange={(e) => setCode2fa(e.target.value)}
+                        className="client-login-input"
+                        required
+                      />
+                    </div>
                   </div>
                 )}
-
+                {error && (
+                  <div className="client-login-error">{error}</div>
+                )}
                 <Button
                   type="submit"
-                  disabled={isLoading}
-                  loading={isLoading}
                   className="client-login-submit"
+                  loading={isLoading}
+                  disabled={(!email || !password) && !need2fa}
                 >
-                  {isLoading ? 'Connexion...' : 'Se connecter'}
+                  {isLoading ? (need2fa ? 'Vérification...' : 'Connexion...') : (need2fa ? 'Valider le code 2FA' : 'Se connecter')}
                 </Button>
 
                 <div className="client-login-divider">

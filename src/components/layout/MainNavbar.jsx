@@ -29,7 +29,7 @@ function MainNavbar() {
                 <div className="main-navbar-actions">
                     {isAuthenticated ? (
                         <>
-                            <Link to={api.getDefaultDashboardPath(role)} className="main-navbar-btn secondary">Mon espace</Link>
+                            <Link to={getDashboardPath(role)} className="main-navbar-btn secondary">Mon espace</Link>
                             <button type="button" className="main-navbar-btn" onClick={handleLogout}>Deconnexion</button>
                         </>
                     ) : (
@@ -42,3 +42,11 @@ function MainNavbar() {
 }
 
 export default MainNavbar
+
+// Fallback local pour la redirection selon le rôle
+function getDashboardPath(role) {
+    const normalized = String(role || "").toLowerCase()
+    if (normalized.includes("super_admin")) return "/dashboardSuperAdmin"
+    if (normalized.includes("garage") || normalized.includes("admin")) return "/dashboardGarage"
+    return "/dashboardClient"
+}
