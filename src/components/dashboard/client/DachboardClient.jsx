@@ -6,9 +6,25 @@ import { getClientRendezVous } from "../../../services/apiGarage.js";
 
 import "./DashboardClient.css";
 
+function parseClientDate(value) {
+    if (!value) return null;
+    const str = String(value).trim();
+
+    // "YYYY-MM-DD HH:mm(:ss)" -> local time
+    if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(str)) {
+        const [d, t] = str.split(/\s+/);
+        const isoLocal = `${d}T${t.length === 5 ? `${t}:00` : t}`;
+        const parsed = new Date(isoLocal);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const parsed = new Date(str);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function normalizeClientRdv(rdv) {
     const dateValue = rdv?.dateDebut || rdv?.date_debut || rdv?.date || "";
-    const parsedDate = dateValue ? new Date(dateValue) : null;
+    const parsedDate = dateValue ? parseClientDate(dateValue) : null;
     const isValidDate = parsedDate instanceof Date && !Number.isNaN(parsedDate.getTime());
 
     return {
@@ -317,25 +333,6 @@ export default function DashboardClient() {
             });
         }
     }, []);
-
-    // --- Récupérer le statut d'un RDV par son id ---
-    const fetchStatusRdv = async (rdvId) => {
-        try {
-
-            const res = await fetch(`http://127.0.0.1:8000/api/v1/rdv/${rdvId}/status`, {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: "no-store"
-            });
-
-            if (!res.ok) throw new Error("Impossible de récupérer le statut du RDV");
-
-            const data = await res.json();
-            // Mettre à jour le RDV correspondant dans la liste
-            setRdvs(prev => prev.map(r => r.id_rdv === rdvId ? { ...r, status: data.status } : r));
-        } catch (err) {
-            console.error("Erreur :", err.message);
-        }
-    };
     // la methode pour annuler un RDV 
     // Annuler un RDV
     const annulerRdv = async (idRdv) => {

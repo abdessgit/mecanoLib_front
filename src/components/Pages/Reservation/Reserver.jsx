@@ -26,6 +26,39 @@ async function fetchGarageRendezVous(idGarage) {
     return await res.json();
 }
 
+function formatLocalDateTime(date) {
+    const pad = (v) => String(v).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function formatLocalDate(date) {
+    const pad = (v) => String(v).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function parseDateTime(value) {
+    if (!value) return null;
+    const str = String(value).trim();
+
+    // Handles "YYYY-MM-DD HH:mm(:ss)" as local time.
+    if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(str)) {
+        const [d, t] = str.split(/\s+/);
+        const isoLocal = `${d}T${t.length === 5 ? `${t}:00` : t}`;
+        const parsed = new Date(isoLocal);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    // Handles "YYYY-MM-DDTHH:mm(:ss)" (no timezone) as local time.
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(str) && !/[zZ]|[+-]\d{2}:\d{2}$/.test(str)) {
+        const parsed = new Date(str.length === 16 ? `${str}:00` : str);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    // Fallback: ISO with timezone ("Z" or "+02:00") or other formats.
+    const parsed = new Date(str);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function normalizeDayLabel(value) {
     return String(value || "")
         .normalize("NFD")
@@ -74,12 +107,13 @@ function buildSlots(start, end, date, busySlots = []) {
         const next = new Date(cursor.getTime() + 30 * 60000);
         if (next > limit) break;
 
-        const dateDebut = cursor.toISOString();
-        const dateFin = next.toISOString();
+        // Important: keep local time, do NOT convert to UTC with toISOString()
+        const dateDebut = formatLocalDateTime(cursor);
+        const dateFin = formatLocalDateTime(next);
         const available = !busySlots.some((busySlot) =>
             hasOverlap(
-                new Date(dateDebut).getTime(),
-                new Date(dateFin).getTime(),
+                parseDateTime(dateDebut)?.getTime() ?? 0,
+                parseDateTime(dateFin)?.getTime() ?? 0,
                 busySlot.start.getTime(),
                 busySlot.end.getTime()
             )
@@ -175,10 +209,10 @@ function transformPlanningResponse(data, rdvs = []) {
     const busySlots = rdvs
         .filter((rdv) => isBlockingStatus(rdv?.status))
         .map((rdv) => ({
-            start: new Date(rdv.dateDebut),
-            end: new Date(rdv.dateFin),
+            start: parseDateTime(rdv.dateDebut),
+            end: parseDateTime(rdv.dateFin),
         }))
-        .filter((slot) => !Number.isNaN(slot.start.getTime()) && !Number.isNaN(slot.end.getTime()));
+        .filter((slot) => slot.start && slot.end && !Number.isNaN(slot.start.getTime()) && !Number.isNaN(slot.end.getTime()));
 
     for (let offset = 0; offset < 14; offset += 1) {
         const currentDate = new Date(now);
@@ -199,11 +233,14 @@ function transformPlanningResponse(data, rdvs = []) {
         const slots = [
             ...buildSlots(horaires.hreOuvreMatin, horaires.hreFermeMatin, currentDate, busySlots),
             ...buildSlots(horaires.hreOuvreSoir, horaires.hreFermeSoir, currentDate, busySlots),
-        ].filter((slot) => new Date(slot.dateDebut) > now);
+        ].filter((slot) => {
+            const startDate = parseDateTime(slot.dateDebut);
+            return startDate ? startDate > now : false;
+        });
 
         if (slots.length === 0) continue;
 
-        const dateKey = currentDate.toISOString().slice(0, 10);
+        const dateKey = formatLocalDate(currentDate);
         planningByDate[dateKey] = {
             label: currentDate.toLocaleDateString("fr-FR", {
                 weekday: "long",
