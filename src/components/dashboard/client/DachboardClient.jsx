@@ -2,8 +2,27 @@ import React, { useContext, useEffect, useState } from "react";
 import { AuthConnexion } from '../../connexion/AuthConnexion.jsx';
 import ConfirmRdvForm from "../../ReservationCard/ConfirmRdvForm";
 import { useNavigate } from "react-router-dom";
+import { getClientRendezVous } from "../../../services/apiGarage.js";
 
 import "./DashboardClient.css";
+
+function normalizeClientRdv(rdv) {
+    const dateValue = rdv?.dateDebut || rdv?.date_debut || rdv?.date || "";
+    const parsedDate = dateValue ? new Date(dateValue) : null;
+    const isValidDate = parsedDate instanceof Date && !Number.isNaN(parsedDate.getTime());
+
+    return {
+        id_rdv: rdv?.id_rdv || rdv?.idRdv || rdv?.id || Math.random().toString(36).slice(2),
+        date_debut: isValidDate ? parsedDate.toLocaleDateString("fr-FR") : dateValue || "-",
+        heure_debut: isValidDate
+            ? parsedDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+            : rdv?.heure_debut || "-",
+        garage: rdv?.garage?.nom_garage || rdv?.garage?.nomGarage || rdv?.nom_garage || rdv?.nomGarage || "-",
+        immatriculation: rdv?.vehicule?.immatriculation || rdv?.immatriculation || "-",
+        prestation: rdv?.prestation?.nom_prestation || rdv?.prestation?.nomPrestation || rdv?.nom_prestation || rdv?.nomPrestation || "-",
+        status: rdv?.status?.libStatusRdv || rdv?.status?.lib_status_rdv || rdv?.status || "En attente",
+    };
+}
 
 export default function DashboardClient() {
     const { logout, token, user } = useContext(AuthConnexion);
@@ -29,9 +48,22 @@ export default function DashboardClient() {
     const [code2FA, setCode2FA] = useState("");
     const [messageActivation, setMessageActivation] = useState("");
     const [messageValidation, setMessageValidation] = useState("");
-    const [notificationCar, setNotificationCar] = useState(""); // pour messages 
-    const [notificationRdv, setNotificationRdv] = useState(""); // pour messages 
+    const [notificationCar, setNotificationCar] = useState("");
+    const [notificationRdv, setNotificationRdv] = useState("");
 
+    const fetchClientRdvs = async () => {
+        if (!token || !client?.clientId) return;
+
+        try {
+            const data = await getClientRendezVous(token, client.clientId);
+            const rdvList = Array.isArray(data?.rdv) ? data.rdv : Array.isArray(data) ? data : [];
+            setRdvs(rdvList.map(normalizeClientRdv));
+            setNotificationRdv("");
+        } catch (err) {
+            console.error("Erreur RDV:", err.message);
+            setNotificationRdv("Impossible de charger les rendez-vous.");
+        }
+    };
 
     // --- Vérifier 2FA à la connexion ---
     useEffect(() => {
@@ -49,7 +81,6 @@ export default function DashboardClient() {
         };
         check2FA();
     }, [token]);
-
 
     // --- Activer 2FA ---
     const activer2FA = async () => {
@@ -208,7 +239,7 @@ export default function DashboardClient() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            // 👉 on recharge la vraie liste depuis la BDD
+            //  on recharge la vraie liste depuis la BDD
             await fetchVehicules(client.clientId);
 
             setNewVehicule({
@@ -262,30 +293,7 @@ export default function DashboardClient() {
     };
     useEffect(() => {
         if (!client || !token) return;
-
-        const fetchRdvs = async () => {
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/v1/client/${client.clientId}/rdvs`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                const text = await res.text();
-                if (!res.ok) throw new Error(text);
-                const data = JSON.parse(text);
-
-                setRdvs(data);
-
-                //  Pour chaque RDV, récupérer son statut via l'endpoint dédié
-                data.forEach(rdv => {
-                    fetchStatusRdv(rdv.id_rdv);
-                });
-
-            } catch (err) {
-                console.error("Erreur RDV:", err.message);
-            }
-        };
-
-        fetchRdvs();
+        fetchClientRdvs();
     }, [client, token]);
 
     // recuperation les information de connexion 
@@ -329,6 +337,7 @@ export default function DashboardClient() {
         }
     };
     // la methode pour annuler un RDV 
+    // Annuler un RDV
     const annulerRdv = async (idRdv) => {
         if (!window.confirm("Voulez-vous vraiment annuler ce rendez-vous ?")) return;
 
@@ -345,20 +354,19 @@ export default function DashboardClient() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            //  mise à jour immédiate du statut dans l'UI
+            //  on utilise le status renvoyé par l’API (propre et synchronisé)
             setRdvs(prev =>
                 prev.map(r =>
-                    r.id_rdv === idRdv ? { ...r, status: "Annuler" } : r
+                    r.id_rdv === idRdv ? { ...r, status: data.status } : r
                 )
             );
 
-            setNotificationRdv("Rendez-vous annulé avec succès");
+            setNotificationRdv(data.message);
 
         } catch (err) {
             setNotificationRdv("Erreur : " + err.message);
         }
     };
-
 
     if (!client) return <p>Chargement...</p>;
 
@@ -379,7 +387,7 @@ export default function DashboardClient() {
                         reservationData={reservationData}
                         vehicules={vehicules}
                         token={token}
-                        onRdvConfirme={(data) => setRdvs(prev => [...prev, data])}
+                        onRdvConfirme={fetchClientRdvs}
                     />
                 </div>
 

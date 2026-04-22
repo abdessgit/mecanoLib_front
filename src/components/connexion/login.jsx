@@ -3,7 +3,7 @@ import { AuthConnexion } from "./AuthConnexion";
 import { useNavigate, Link } from "react-router-dom";
 import "./Login.css";
 
-const Login = () => {
+const Login = ({ embedded = false, onSuccess }) => {
     const [emailUtilisateur, setEmailUtilisateur] = useState("");
     const [mdpUtilisateur, setMdpUtilisateur] = useState("");
     const [authCode, setAuthCode] = useState("");
@@ -48,7 +48,11 @@ const Login = () => {
 
         // Redirection selon rôle
         if (res.user && res.user.roles) {
-            redirectByRole(res.user.roles);
+            if (typeof onSuccess === "function") {
+                onSuccess(res.user);
+            } else {
+                redirectByRole(res.user.roles);
+            }
         } else {
             setMessage("Erreur : rôle utilisateur introuvable");
         }
@@ -57,7 +61,7 @@ const Login = () => {
     };
 
     return (
-        <div className="login-container">
+        <div className={`login-container ${embedded ? "login-container-embedded" : ""}`}>
             <h2>Connexion</h2>
 
             {message && <div className="alert alert-danger">{message}</div>}

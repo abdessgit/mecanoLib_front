@@ -37,7 +37,7 @@ export async function getGaragesByVille(idVille) {
 };*/
 // affichage planning test 
 export const getPlanningByGarage = async (idGarage) => {
-    const res = await fetch(`http://localhost:8000/api/v1/garage/${idGarage}/planning`);
+    const res = await fetch(`http://localhost:8000/api/v1/get_planning_by_garage/${idGarage}`);
 
     if (!res.ok) throw new Error("Impossible de récupérer le planning");
     return await res.json();

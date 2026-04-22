@@ -21,7 +21,15 @@ export default function ConfirmRdvForm({ vehicules, token, onRdvConfirme }) {
         );
     }
 
-    const { nom_garage, nom_categorie, date_debut, date_fin } = reservationData;
+    const {
+        nom_garage,
+        nom_categorie,
+        nom_prestation,
+        date_debut,
+        date_fin,
+    } = reservationData;
+
+    const prestationLabel = nom_prestation || nom_categorie || reservationData.nom_prestation || reservationData.nom_categorie;
 
     const handleConfirm = async () => {
         if (!vehiculeSelectionne) {
@@ -30,18 +38,17 @@ export default function ConfirmRdvForm({ vehicules, token, onRdvConfirme }) {
         }
 
         try {
-            await confirmerRdv(reservationData, vehiculeSelectionne, token);
+            const rdv = await confirmerRdv(reservationData, vehiculeSelectionne, token);
 
             // supprimer la demande en attente
             localStorage.removeItem("reservationData");
+            setReservationData(null);
 
             // afficher message succès
             setMessage("Votre rendez-vous a été confirmé ");
-
-            // refresh automatique après 2 secondes
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            if (typeof onRdvConfirme === "function") {
+                await onRdvConfirme(rdv);
+            }
 
         } catch (err) {
             setMessage("Erreur : " + err.message);
@@ -56,7 +63,7 @@ export default function ConfirmRdvForm({ vehicules, token, onRdvConfirme }) {
 
 
             <p>Nom Garage : {nom_garage}</p>
-            <p>Prestation  : {nom_categorie}</p>
+            <p>Prestation  : {prestationLabel}</p>
             <p>Créneau : {date_debut} à {date_fin}</p>
 
             <select
