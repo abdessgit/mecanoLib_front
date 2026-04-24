@@ -334,13 +334,13 @@ export default function DashboardClient() {
         }
     }, []);
     // la methode pour annuler un RDV 
-    // Annuler un RDV
+
     const annulerRdv = async (idRdv) => {
         if (!window.confirm("Voulez-vous vraiment annuler ce rendez-vous ?")) return;
 
         try {
             const res = await fetch(`http://127.0.0.1:8000/api/v1/annuler_rdv/${idRdv}`, {
-                method: "PUT",
+                method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
@@ -445,7 +445,7 @@ export default function DashboardClient() {
                         </div>
 
                         {/*  bouton annuler */}
-                        {rdv.status !== "Annuler" && rdv.status !== "Terminer" && (
+                        {rdv.status !== "AnnulerClient" && rdv.status !== "Terminer" && rdv.status !== "Refuser" && (
                             <button
                                 className="btn-annuler-rdv"
                                 onClick={() => annulerRdv(rdv.id_rdv)}

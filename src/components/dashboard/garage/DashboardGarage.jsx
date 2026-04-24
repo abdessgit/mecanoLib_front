@@ -191,7 +191,6 @@ export default function GarageRdv() {
         "Refuser": { bg: "rgba(220,38,38,0.22)", border: "#dc2626", color: "#fecaca" },
         "Terminer": { bg: "rgba(100,116,139,0.22)", border: "#64748b", color: "#cbd5e1" },
 
-
     };
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -661,7 +660,7 @@ export default function GarageRdv() {
 
             {globalError && <div className="alert alert-error">{globalError}</div>}
             {messageActivation && <div className="alert alert-info">{messageActivation}</div>}
-            {messageValidation && <div className="alert alert-success">{messageValidation}</div>}
+
 
             <div className="garage-grid">
                 <section className="garage-card">
@@ -835,7 +834,8 @@ export default function GarageRdv() {
                 </section>
 
                 <section className="garage-card garage-card-wide">
-                    {messageValidationRdv && <div className="alert alert-success">{messageValidationRdv}</div>}
+
+                    {messageValidation && <div className="alert alert-success">{messageValidation}</div>}
                     <h2>Rendez-vous Garage</h2>
                     {rdvs.length === 0 ? (
                         <p>Aucun rendez-vous pour le moment.</p>
@@ -859,20 +859,23 @@ export default function GarageRdv() {
                                             <td>{rdv.dateFin || "-"}</td>
                                             <td>
                                                 <div className="rdv-actions">
-                                                    <select
-                                                        value={rdvEdits[rdv.idRdv]?.statusLabel || rdv.status || ""}
-                                                        onChange={(e) => updateRdvEdit(rdv.idRdv, "statusLabel", e.target.value)}
-                                                    >
-                                                        <option value="">Choisir un statut</option>
-                                                        {RDV_STATUS_OPTIONS.map((status) => (
-                                                            <option key={status} value={status}>{status}</option>
-                                                        ))}
-                                                    </select>
+                                                    {rdv.status !== "AnnulerClient" && (
+                                                        <select
+                                                            value={rdvEdits[rdv.idRdv]?.statusLabel || rdv.status || ""}
+                                                            onChange={(e) => updateRdvEdit(rdv.idRdv, "statusLabel", e.target.value)}
+                                                        >
+                                                            <option value="">Choisir un statut</option>
+                                                            {RDV_STATUS_OPTIONS.map((status) => (
+                                                                <option key={status} value={status}>{status}</option>
+                                                            ))}
+                                                        </select>
+                                                    )}
                                                     <input
                                                         type="text"
                                                         placeholder="Motif de refus (optionnel)"
                                                         value={rdvEdits[rdv.idRdv]?.motifRefus || ""}
                                                         onChange={(e) => updateRdvEdit(rdv.idRdv, "motifRefus", e.target.value)}
+                                                        disabled
                                                     />
                                                 </div>
                                             </td>
