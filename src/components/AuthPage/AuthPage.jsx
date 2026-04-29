@@ -1,16 +1,17 @@
 import React from "react";
-import Login from "../connexion/login"; // chemin vers ton composant Login
-import RegisterForm from "../inscription/InscriptionGarage"; // chemin vers ton composant Inscription
-import './AuthPage.css'; // pour le style flex
+import Login from "../connexion/login";
+import { Link } from "react-router-dom";
+import "./AuthPage.css";
 
 const AuthPage = () => {
     return (
         <div className="auth-page-container">
-            <div className="auth-left">
+            <div className="">
                 <Login />
-            </div>
-            <div className="auth-right">
-                <RegisterForm />
+                <p className="register-link">
+                    Vous n’avez pas de compte ?{" "}
+                    <Link to="/inscription-garage">Créer un compte</Link>
+                </p>
             </div>
         </div>
     );

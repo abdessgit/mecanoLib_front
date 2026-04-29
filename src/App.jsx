@@ -9,6 +9,7 @@ import DashboardClient from "./components/dashboard/client/DachboardClient";
 import ResetPassword from "./components/AuthPage/ResetPassword";
 import Footer from "./components/Footer/Footer";
 import Reserver from "./components/Pages/Reservation/Reserver";
+import InscriptionGarage from "./components/inscription/InscriptionGarage";
 function App() {
     return (
         <>
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/DashboardSuperAdmin" element={<DashboardSuperAdmin />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/reserver" element={<Reserver />} />
+                <Route path="/inscription-garage" element={<InscriptionGarage />} />
             </Routes>
             <Footer />
         </>

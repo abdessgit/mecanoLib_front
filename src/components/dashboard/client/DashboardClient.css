@@ -1,7 +1,3 @@
-/* =========================
-   APPLE GLASS DARK THEME
-========================= */
-
 * {
   margin: 0;
   padding: 0;
@@ -14,7 +10,6 @@ body {
   color: #fff;
 }
 
-/* ===== Glass effect reusable ===== */
 .glass {
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(18px) saturate(180%);
@@ -26,40 +21,39 @@ body {
   border-radius: 20px;
 }
 
-/* ===== Layout ===== */
+/* LAYOUT */
 .client-dashboard {
   max-width: 1100px;
   margin: 40px auto;
-  padding: 20px;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
-.security-section h2 {
-  color: white;
-  margin-top: 0;
-}
-/* ===== Header ===== */
+
+/* HEADER */
 .client-dashboard-header {
-  padding: 28px;
+  padding: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 
 .client-dashboard-header h1 {
-  font-size: 28px;
+  font-size: clamp(20px, 4vw, 28px);
   font-weight: 600;
   letter-spacing: -0.5px;
 }
 
 .client-dashboard-header p {
   opacity: 0.6;
-  margin-top: 5px;
+  margin-top: 4px;
   font-size: 14px;
 }
 
-/* ===== Apple buttons ===== */
+/* BUTTONS */
 button {
   border: none;
   border-radius: 12px;
@@ -70,13 +64,13 @@ button {
   backdrop-filter: blur(10px);
   transition: 0.25s;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  cursor: pointer;
 }
 
 button:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
 }
-
 button:active {
   transform: scale(0.97);
 }
@@ -84,14 +78,12 @@ button:active {
 .btn.primary {
   background: linear-gradient(135deg, #0a84ff, #0066ff);
 }
-
 .btn.danger {
   background: linear-gradient(135deg, #ff453a, #ff2d55);
 }
 
-/* ===== Status ===== */
+/* STATUS */
 .status.success {
-  margin-top: 0;
   padding: 12px 20px;
   border-radius: 14px;
   background: rgba(52, 199, 89, 0.15);
@@ -99,12 +91,12 @@ button:active {
   backdrop-filter: blur(10px);
 }
 
-/* ===== Sections glass ===== */
+/* SECTIONS */
 .security-section,
 .client-dashboard-vehicules,
 .client-dashboard-rdvs,
 .client-dashboard-add-vehicule {
-  padding: 25px;
+  padding: 24px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
@@ -112,14 +104,19 @@ button:active {
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
 }
 
+.security-section h2 {
+  color: white;
+  margin-top: 0;
+}
+
 h2 {
-  font-size: 22px;
-  margin-bottom: 18px;
+  font-size: 20px;
+  margin-bottom: 16px;
   font-weight: 600;
   letter-spacing: -0.3px;
 }
 
-/* ===== Inputs Apple ===== */
+/* INPUTS */
 input,
 select {
   width: 100%;
@@ -130,33 +127,80 @@ select {
   color: white;
   backdrop-filter: blur(8px);
   margin-bottom: 10px;
+  font-size: 15px;
 }
 
 input:focus,
 select:focus {
   outline: none;
-  border: 1px solid #0a84ff;
+  border-color: #0a84ff;
   box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.3);
 }
 
-/* ===== Véhicules ===== */
+/* BTN GROUP */
+.btn-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 2FA FORM */
+.twofa-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.info {
+  color: #0a84ff;
+  font-size: 14px;
+  margin-top: 8px;
+}
+.success-msg {
+  color: #34c759;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* DISPLAY FLEX — side by side sur desktop */
+.display-flex {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.display-flex > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* VEHICULE ITEM */
 .client-dashboard-vehicule-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 16px;
   border-radius: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* ===== RDV cards ===== */
+.client-dashboard-vehicule-item span {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+/* RDV CARDS */
 .rdv-card {
-  padding: 18px 22px;
+  padding: 18px 20px;
   border-radius: 18px;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -174,17 +218,16 @@ select:focus {
   opacity: 0.9;
 }
 
-/* ===== Status pill ===== */
+/* STATUS PILL */
 .rdv-status {
   display: inline-block;
   margin-top: 8px;
-  padding: 6px 12px;
+  padding: 5px 12px;
   border-radius: 999px;
   font-size: 13px;
   backdrop-filter: blur(8px);
 }
 
-/* couleurs statut */
 .rdv-status.en-attente {
   background: rgba(255, 159, 10, 0.2);
 }
@@ -195,24 +238,66 @@ select:focus {
   background: rgba(255, 69, 58, 0.2);
 }
 
-/* ===== Notification ===== */
+/* ANNULER BTN */
+.btn-annuler-rdv {
+  margin-top: 12px;
+  background: rgba(255, 69, 58, 0.15);
+  border: 1px solid rgba(255, 69, 58, 0.3);
+  color: #ff453a;
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+.btn-annuler-rdv:hover {
+  background: rgba(255, 69, 58, 0.28);
+}
+
+/* NOTIFICATION */
 .notification {
-  padding: 14px;
+  padding: 12px 14px;
   border-radius: 14px;
   background: rgba(10, 132, 255, 0.15);
   border: 1px solid rgba(10, 132, 255, 0.3);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
 }
 
-/* ===== Responsive ===== */
+/* RESPONSIVE */
 @media (max-width: 768px) {
-  .client-dashboard-header {
+  .display-flex {
     flex-direction: column;
-    gap: 15px;
+  }
+
+  .client-dashboard-vehicule-item {
+    flex-direction: column;
     align-items: flex-start;
   }
+  .client-dashboard-vehicule-item button {
+    width: 100%;
+  }
 }
-.display-flex {
-  display: flex;
-  justify-content: space-around;
+
+@media (max-width: 480px) {
+  .client-dashboard {
+    padding: 12px;
+    gap: 14px;
+  }
+
+  .security-section,
+  .client-dashboard-vehicules,
+  .client-dashboard-rdvs,
+  .client-dashboard-add-vehicule {
+    padding: 18px 14px;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+  .btn-group button {
+    width: 100%;
+  }
+
+  .rdv-card {
+    padding: 14px;
+  }
 }

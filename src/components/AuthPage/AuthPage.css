@@ -1,25 +1,32 @@
 .auth-page-container {
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  gap: 50px; 
-  padding: 50px;
-  flex-wrap: wrap; 
+  align-items: center;
 }
 
-.auth-left,
-.auth-right {
-  flex: 1;
-  min-width: 300px; 
-}
-.auth-page-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 2rem; 
-    padding: 2rem;
+/* conteneur bloc login + lien */
+.auth-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
 }
 
-.auth-left, .auth-right {
-    flex: 1;
+/* lien inscription */
+.register-link {
+  text-align: center;
+  color: #ccc;
+  font-size: 15px;
+}
+
+.register-link a {
+  color: #f1c40f;
+  font-weight: bold;
+  text-decoration: none;
+  margin-left: 5px;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
 }
