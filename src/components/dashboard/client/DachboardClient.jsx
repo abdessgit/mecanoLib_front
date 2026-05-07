@@ -67,13 +67,17 @@ export default function DashboardClient() {
     const [notificationCar, setNotificationCar] = useState("");
     const [notificationRdv, setNotificationRdv] = useState("");
 
+    // affichage des rdvs 
     const fetchClientRdvs = async () => {
         if (!token || !client?.clientId) return;
 
         try {
             const data = await getClientRendezVous(token, client.clientId);
-            const rdvList = Array.isArray(data?.rdv) ? data.rdv : Array.isArray(data) ? data : [];
-            setRdvs(rdvList.map(normalizeClientRdv));
+
+
+            const rdvList = Array.isArray(data) ? data : [];
+
+            setRdvs(rdvList);
             setNotificationRdv("");
         } catch (err) {
             console.error("Erreur RDV:", err.message);
@@ -98,12 +102,18 @@ export default function DashboardClient() {
         check2FA();
     }, [token]);
 
+
     // --- Activer 2FA ---
     const activer2FA = async () => {
         try {
+            const token = localStorage.getItem("token");
+
             const res = await fetch("http://127.0.0.1:8000/api/v1/users/activer_2fa", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify({ email: user.email })
             });
 
@@ -113,6 +123,7 @@ export default function DashboardClient() {
             setMessageActivation("Vérifie ton email pour scanner le QR code");
             setIs2FARequired(true);
             setIs2FAActivated(true);
+
         } catch (err) {
             setMessageActivation(err.message);
         }
@@ -121,9 +132,13 @@ export default function DashboardClient() {
     // --- Désactiver 2FA ---
     const desactiver2FA = async () => {
         try {
+
             const res = await fetch("http://127.0.0.1:8000/api/v1/users/desactiver_2fa", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify({ email: user.email })
             });
 
@@ -150,11 +165,10 @@ export default function DashboardClient() {
                 },
                 body: JSON.stringify({ email: user.email, code: code2FA })
             });
-
             const text = await res.text();
             let data;
             try { data = JSON.parse(text); }
-            catch { throw new Error("Réponse serveur invalide (pas du JSON)"); }
+            catch { throw new Error("Réponse serveur invalide c'est du JSON"); }
 
             if (!res.ok) throw new Error(data.message);
 
@@ -179,14 +193,14 @@ export default function DashboardClient() {
             if (!resVehicules.ok) throw new Error(await resVehicules.text());
 
             const vehiculesData = await resVehicules.json();
-            setVehicules(vehiculesData); //  rerender automatique
+            setVehicules(vehiculesData);
 
         } catch (err) {
             console.error("Erreur véhicules:", err);
         }
     };
 
-    // --- Récupérer client + véhicules ---
+    // --- Récupérer client + ces véhicules ---
     useEffect(() => {
         if (!token) return;
 
@@ -199,14 +213,9 @@ export default function DashboardClient() {
                 const userData = await resClient.json();
                 setClient(userData);
 
-                if (!userData.clientId) throw new Error("Client ID introuvable");
 
-                const resVehicules = await fetch(`http://127.0.0.1:8000/api/v1/client/vehicules/${userData.clientId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (!resVehicules.ok) throw new Error(await resVehicules.text());
-                const vehiculesData = await resVehicules.json();
-                setVehicules(vehiculesData);
+                await fetchVehicules(userData.clientId);
+
 
             } catch (err) {
                 console.error("Erreur API:", err);
@@ -255,7 +264,7 @@ export default function DashboardClient() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            //  on recharge la vraie liste depuis la BDD
+            //  on recharge la liste des vehcule
             await fetchVehicules(client.clientId);
 
             setNewVehicule({
@@ -351,7 +360,7 @@ export default function DashboardClient() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            //  on utilise le status renvoyé par l’API (propre et synchronisé)
+            //  on utilise le status renvoyé par l’API 
             setRdvs(prev =>
                 prev.map(r =>
                     r.id_rdv === idRdv ? { ...r, status: data.status } : r
@@ -375,7 +384,6 @@ export default function DashboardClient() {
                 <button onClick={() => { logout(); navigate("/auth"); }}>Se déconnecter</button>
             </div>
 
-            {/* 2FA */}
             {!is2FARequired && <div className="status success">Vous êtes connecté</div>}
             <div className="display-flex">
 
@@ -433,9 +441,10 @@ export default function DashboardClient() {
                 {rdvs.map(rdv => (
                     <div key={rdv.id_rdv} className="rdv-card">
                         <div className="rdv-date">
-                            {rdv.date_debut} — {rdv.heure_debut}
+                            {rdv.date_debut?.date
+                                ? new Date(rdv.date_debut.date).toLocaleString()
+                                : rdv.date_debut}
                         </div>
-
                         <div>Garage : {rdv.garage}</div>
                         <div>Véhicule : {rdv.immatriculation}</div>
                         <div>Prestation : {rdv.prestation}</div>
@@ -443,7 +452,6 @@ export default function DashboardClient() {
                         <div className={`rdv-status ${rdv.status?.toLowerCase().replace(/\s/g, '-') || 'En-attente'}`}>
                             Statut : {rdv.status || "En attente"}
                         </div>
-
                         {/*  bouton annuler */}
                         {rdv.status !== "AnnulerClient" && rdv.status !== "Terminer" && rdv.status !== "Refuser" && (
                             <button

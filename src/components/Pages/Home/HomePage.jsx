@@ -38,8 +38,6 @@ export default function HomePage() {
 
     return (
         <div className="home">
-
-            {/* ── HERO ── */}
             <header className="hero">
                 <img
                     key={index}
@@ -48,7 +46,6 @@ export default function HomePage() {
                     className="hero-img slide-animation"
                     loading="lazy"
                 />
-
                 <button className="arrow left" aria-label="Précédent" onClick={prev}>❮</button>
                 <button className="arrow right" aria-label="Suivant" onClick={next}>❯</button>
 
@@ -60,8 +57,6 @@ export default function HomePage() {
 
                     </div>
                 </div>
-
-                {/* dots */}
                 <div className="hero-dots" role="tablist" aria-label="Slides">
                     {SLIDES.map((_, i) => (
                         <button
@@ -73,8 +68,6 @@ export default function HomePage() {
                     ))}
                 </div>
             </header>
-
-            {/* ── STATS ── */}
             <section className="stats" aria-label="Statistiques">
                 <article className="stat"><h3>10K+</h3><p>Rendez-vous pris</p></article>
                 <article className="stat"><h3>150+</h3><p>Garages partenaires</p></article>
@@ -82,7 +75,7 @@ export default function HomePage() {
                 <article className="stat"><h3>-40%</h3><p>No-show</p></article>
             </section>
 
-            {/* ── FEATURES ── */}
+
             <section className="features" aria-label="Fonctionnalités">
                 <h2>Pourquoi MecanoLib ?</h2>
                 <p className="features-subtitle">Tout ce dont vous avez besoin, au même endroit.</p>
@@ -96,7 +89,7 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* ── TESTIMONIALS ── */}
+
             <section className="testimonials" aria-label="Témoignages">
                 <h2>Ils nous font confiance</h2>
                 <div className="testimonials-grid">
@@ -111,7 +104,7 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* ── CTA ── */}
+
             <section className="cta">
                 <h2>Prêt à <span>réserver</span> ?</h2>
                 <Link to="/Reserver" className="btn-primary big">

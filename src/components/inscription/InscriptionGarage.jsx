@@ -107,7 +107,7 @@ function RegisterForm() {
             const result = await res.json();
             if (lastSiret.current !== value) return;
             if (!result.exists) {
-                setMessage("SIRET introuvable");
+                setMessage(result.message);
                 setSiretValid(false);
                 setLoadingSiret(false);
                 return;
