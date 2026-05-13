@@ -29,7 +29,10 @@ function RegisterForm() {
     const [message, setMessage] = useState("");
     const [siretValid, setSiretValid] = useState(false);
     const lastSiret = useRef("");
-
+    // rate limit 
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [remainingTime, setRemainingTime] = useState(0);
+    //-----
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -83,6 +86,23 @@ function RegisterForm() {
         setAdresse(results);
     };
 
+    // calcule timing rate limit
+    const startRateLimitTimer = () => {
+        setIsBlocked(true);
+        setRemainingTime(60);
+
+        const interval = setInterval(() => {
+            setRemainingTime((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    setIsBlocked(false);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
     // CALCUL TVA
     const calculerTvaIntracommunautaire = (siret) => {
         const digits = siret.replace(/\D/g, '');
@@ -132,7 +152,7 @@ function RegisterForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        setMessage("");
         if (!form.consentement_client) {
             setMessage("Vous devez accepter les conditions et la politique de confidentialité.");
             return;
@@ -179,6 +199,18 @@ function RegisterForm() {
             });
 
             const data = await response.json();
+
+            //rate limit 
+            if (response.status === 429) {
+                startRateLimitTimer();
+                setMessage("Trop de tentatives. Merci d'attendre 1 minute.");
+                return;
+            }
+
+            if (!response.ok) {
+                setMessage(data.message || "Erreur lors de l'inscription");
+                return;
+            }
             setMessage(data.message || "Inscription réussie");
 
         } catch (error) {
@@ -335,8 +367,17 @@ function RegisterForm() {
                                 J'accepte les conditions et la politique de confidentialité
                             </label>
                         </div>
-                        <button className="btn btn-primary mt-4" disabled={form.typeUtilisateur === "garage" && !siretValid}>
-                            Inscription
+
+                        <button
+                            className="btn btn-primary mt-4"
+                            disabled={
+                                isBlocked ||
+                                (form.typeUtilisateur === "garage" && !siretValid)
+                            }
+                        >
+                            {isBlocked
+                                ? `Réessayer dans ${remainingTime}s`
+                                : "Inscription"}
                         </button>
 
                     </form>

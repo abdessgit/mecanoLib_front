@@ -31,7 +31,6 @@ const Login = ({ embedded = false, onSuccess }) => {
 
         const res = await login({ emailUtilisateur, mdpUtilisateur, authCode });
 
-        // Backend demande 2FA
         if (res.need2FA) {
             setNeed2FA(true);
             setMessage("Entrez le code Google Authenticator");
@@ -39,20 +38,14 @@ const Login = ({ embedded = false, onSuccess }) => {
             return;
         }
 
-        // Erreur login
         if (!res.success) {
             setMessage(res.message || "Erreur de connexion");
             setLoading(false);
             return;
         }
 
-        // Redirection selon rôle
         if (res.user && res.user.roles) {
-            if (typeof onSuccess === "function") {
-                onSuccess(res.user);
-            } else {
-                redirectByRole(res.user.roles);
-            }
+            redirectByRole(res.user.roles);
         } else {
             setMessage("Erreur : rôle utilisateur introuvable");
         }

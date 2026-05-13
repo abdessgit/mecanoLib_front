@@ -29,7 +29,6 @@ export const AuthProvider = ({ children }) => {
             logout();
         }
     };
-
     const login = async ({ emailUtilisateur, mdpUtilisateur, authCode }) => {
         try {
             const res = await fetch("http://127.0.0.1:8000/api/v1/users/login", {
