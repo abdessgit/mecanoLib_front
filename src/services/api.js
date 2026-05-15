@@ -437,6 +437,19 @@ export async function getPrestationsCatalogue() {
     })
 }
 
+export async function getGaragePrestations(token, garageId) {
+    if (!garageId) {
+        return []
+    }
+
+    const data = await apiFetch(`/api/v1/get_prestations_by_garage/${garageId}`, {
+        method: "GET",
+        headers: buildJsonHeaders(token),
+    })
+
+    return Array.isArray(data) ? data : data?.prestations || []
+}
+
 export async function getClientVehiculesMe(token) {
     return apiFetch("/api/v1/client/vehicules/me", {
         method: "GET",
@@ -498,8 +511,10 @@ export async function registerGarage(payload) {
 }
 
 export async function checkSiretInsee(siret) {
-    return apiFetch(`/api/v1/check_siret_insee/${encodeURIComponent(siret)}`, {
-        method: "GET",
+    return apiFetch("/api/v1/check_siret_insee", {
+        method: "POST",
+        headers: buildJsonHeaders(),
+        body: JSON.stringify({ siret: String(siret || "").trim() }),
     })
 }
 

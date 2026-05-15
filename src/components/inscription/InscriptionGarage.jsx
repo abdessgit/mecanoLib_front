@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { checkSiretInsee, registerClient, registerGarage } from "../../services/api";
+import "bootstrap/dist/css/bootstrap.min.css";
 import './Inscription.css';
 
 function RegisterForm() {
@@ -29,7 +29,10 @@ function RegisterForm() {
     const [message, setMessage] = useState("");
     const [siretValid, setSiretValid] = useState(false);
     const lastSiret = useRef("");
-
+    // rate limit 
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [remainingTime, setRemainingTime] = useState(0);
+    //-----
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -83,6 +86,23 @@ function RegisterForm() {
         setAdresse(results);
     };
 
+    // calcule timing rate limit
+    const startRateLimitTimer = () => {
+        setIsBlocked(true);
+        setRemainingTime(60);
+
+        const interval = setInterval(() => {
+            setRemainingTime((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    setIsBlocked(false);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
     // CALCUL TVA
     const calculerTvaIntracommunautaire = (siret) => {
         const digits = siret.replace(/\D/g, '');
@@ -103,10 +123,17 @@ function RegisterForm() {
         setLoadingSiret(true);
 
         try {
-            const result = await checkSiretInsee(value);
+            const res = await fetch("http://127.0.0.1:8000/api/v1/check_siret_insee", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ siret: value }),
+            });
+            const result = await res.json();
             if (lastSiret.current !== value) return;
             if (!result.exists) {
-                setMessage("SIRET introuvable");
+                setMessage(result.message);
                 setSiretValid(false);
                 setLoadingSiret(false);
                 return;
@@ -131,7 +158,11 @@ function RegisterForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        setMessage("");
+        if (!form.consentement_client) {
+            setMessage("Vous devez accepter les conditions et la politique de confidentialité.");
+            return;
+        }
         // Validation pour Garage
         if (form.typeUtilisateur === "garage" && (!form.siret || !siretValid)) {
             setMessage("SIRET invalide");
@@ -139,6 +170,10 @@ function RegisterForm() {
         }
 
         try {
+            let url = form.typeUtilisateur === "garage"
+                ? "http://127.0.0.1:8000/api/v1/users/inscrire-garage"
+                : "http://127.0.0.1:8000/api/v1/users/inscrire_client";
+
             const payload = form.typeUtilisateur === "garage"
                 ? {
                     nom_garage: form.nom_garage,
@@ -163,9 +198,25 @@ function RegisterForm() {
                     consentement_client: form.consentement_client,
                 };
 
-            const data = form.typeUtilisateur === "garage"
-                ? await registerGarage(payload)
-                : await registerClient(payload);
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            //rate limit 
+            if (response.status === 429) {
+                startRateLimitTimer();
+                setMessage("Trop de tentatives. Merci d'attendre 1 minute.");
+                return;
+            }
+
+            if (!response.ok) {
+                setMessage(data.message || "Erreur lors de l'inscription");
+                return;
+            }
             setMessage(data.message || "Inscription réussie");
 
         } catch (error) {
@@ -322,8 +373,17 @@ function RegisterForm() {
                                 J'accepte les conditions et la politique de confidentialité
                             </label>
                         </div>
-                        <button className="btn btn-primary mt-4" disabled={form.typeUtilisateur === "garage" && !siretValid}>
-                            Inscription
+
+                        <button
+                            className="btn btn-primary mt-4"
+                            disabled={
+                                isBlocked ||
+                                (form.typeUtilisateur === "garage" && !siretValid)
+                            }
+                        >
+                            {isBlocked
+                                ? `Réessayer dans ${remainingTime}s`
+                                : "Inscription"}
                         </button>
 
                     </form>

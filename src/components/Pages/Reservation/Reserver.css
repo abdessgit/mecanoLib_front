@@ -1,0 +1,472 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap");
+
+:root {
+  --bg-deep: #0a0a0f;
+  --bg-surface: #111118;
+  --bg-card: #16161f;
+  --bg-card-hover: #1c1c28;
+  --accent: #00b4ff;
+  --accent-dim: rgba(0, 180, 255, 0.1);
+  --accent-glow: rgba(0, 180, 255, 0.22);
+  --accent-border: rgba(0, 180, 255, 0.3);
+  --success: #00d48a;
+  --success-dim: rgba(0, 212, 138, 0.12);
+  --text-primary: #f0f0f5;
+  --text-muted: #8888a0;
+  --text-faint: #3a3a50;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --font-display: "Bebas Neue", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* CONTAINER */
+.rdv-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 60px 20px 80px;
+}
+
+.rdv-container h1 {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 6vw, 54px);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 300;
+  margin-bottom: 40px;
+}
+
+.error-message {
+  background: rgba(255, 80, 80, 0.1);
+  border: 1px solid rgba(255, 80, 80, 0.25);
+  color: #ff6b6b;
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* STEPPER */
+.stepper {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 40px;
+}
+
+.step {
+  padding: 7px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.step.done {
+  background: var(--success-dim);
+  border-color: rgba(0, 212, 138, 0.3);
+  color: var(--success);
+}
+.step.done::before {
+  content: "✓ ";
+}
+.step.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+/* CARDS */
+.card,
+.garage-card,
+.reservation-summary-card,
+.reservation-login-card,
+.reservation-confirm-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 28px 24px;
+  animation: fadeUp 0.3s ease both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card h2,
+.garage-card h2,
+.reservation-summary-card h2,
+.reservation-login-card h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.selected-prestation {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.planning-container {
+  display: grid;
+  gap: 18px;
+}
+
+.planning-days {
+  display: grid;
+  gap: 14px;
+}
+
+.planning-day {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.planning-day summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.planning-day summary::-webkit-details-marker {
+  display: none;
+}
+
+.planning-day[open] summary {
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.planning-day-count {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.planning-day-body {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.planning-field {
+  display: grid;
+  gap: 8px;
+}
+
+.planning-field span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.planning-field select {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  padding: 13px 14px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    background 0.2s;
+  appearance: none;
+}
+
+.planning-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.planning-field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.planning-note {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* SEARCH */
+.search-box {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-box input::placeholder {
+  color: var(--text-muted);
+}
+.search-box input:focus {
+  border-color: var(--accent);
+}
+
+.search-box button {
+  padding: 12px 22px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--r-sm);
+  color: #000;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.search-box button:hover {
+  background: #1fd0ff;
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.item-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 15px;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    transform 0.15s;
+}
+
+.item-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-border);
+  transform: translateY(-2px);
+}
+
+/* FINAL STEP */
+.reservation-final-step {
+  display: grid;
+  gap: 16px;
+  animation: fadeUp 0.3s ease both;
+}
+
+.reservation-summary-card p {
+  font-size: 15px;
+  color: var(--text-muted);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.reservation-summary-card p:last-child {
+  border-bottom: none;
+}
+.reservation-summary-card p strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.reservation-forgot-password {
+  text-align: right;
+  margin-top: 8px;
+}
+.reservation-forgot-password a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+/* FOOTER */
+.footer-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  gap: 10px;
+}
+
+.btn-back {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  padding: 11px 20px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+
+.btn-back:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.btn-next {
+  background: var(--accent);
+  border: none;
+  color: #000;
+  padding: 11px 26px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.btn-next:hover {
+  background: #1fd0ff;
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+
+/* RESPONSIVE */
+@media (max-width: 560px) {
+  .rdv-container {
+    padding: 36px 16px 60px;
+  }
+
+  .stepper {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding-bottom: 6px;
+  }
+
+  .card,
+  .garage-card,
+  .reservation-summary-card,
+  .reservation-login-card {
+    padding: 20px 16px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planning-day summary {
+    padding: 12px 14px;
+  }
+
+  .planning-day-body {
+    padding: 14px;
+  }
+
+  .planning-field select {
+    font-size: 14px;
+  }
+
+  .search-box {
+    flex-direction: column;
+  }
+  .search-box button {
+    width: 100%;
+  }
+
+  .footer-buttons {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .btn-back,
+  .btn-next {
+    width: 100%;
+    text-align: center;
+  }
+}

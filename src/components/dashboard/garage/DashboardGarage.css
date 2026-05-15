@@ -2,7 +2,11 @@
   min-height: 100vh;
   padding: 40px 16px;
   background:
-    radial-gradient(circle at 15% 10%, rgba(194, 166, 60, 0.22), transparent 35%),
+    radial-gradient(
+      circle at 15% 10%,
+      rgba(194, 166, 60, 0.22),
+      transparent 35%
+    ),
     linear-gradient(120deg, #0e172a 0%, #14213d 45%, #101828 100%) !important;
   color: #f8fafc;
   font-size: 16px;
@@ -65,7 +69,9 @@
   backdrop-filter: blur(6px);
   border-radius: 14px;
   padding: 18px;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .garage-card:hover {
@@ -172,7 +178,10 @@
   padding: 10px 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .btn:hover {
@@ -230,7 +239,9 @@
   font-size: 14px;
   background: rgba(17, 24, 39, 0.8);
   color: #f8fafc;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .garage-card input::placeholder,
@@ -316,7 +327,9 @@
   padding: 7px 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .garage-panel button.day-chip {
@@ -358,7 +371,9 @@
   text-align: left;
   min-height: 130px;
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .garage-panel button.week-day-card {
@@ -469,7 +484,9 @@
 .agenda-slot-cell {
   text-align: center;
   font-weight: 600;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .agenda-slot-cell.open {
@@ -711,10 +728,16 @@
   transition: background 0.15s;
 }
 
-.ol-day-head:last-child { border-right: none; }
+.ol-day-head:last-child {
+  border-right: none;
+}
 
-.ol-day-head.ol-is-today  { background: rgba(250, 204, 21, 0.07); }
-.ol-day-head.ol-day-off   { opacity: 0.38; }
+.ol-day-head.ol-is-today {
+  background: rgba(250, 204, 21, 0.07);
+}
+.ol-day-head.ol-day-off {
+  opacity: 0.38;
+}
 
 .ol-day-label {
   font-size: 10px;
@@ -791,9 +814,13 @@
   transition: background 0.15s;
 }
 
-.ol-day-col:last-child { border-right: none; }
+.ol-day-col:last-child {
+  border-right: none;
+}
 
-.ol-day-col:hover { background: rgba(250, 204, 21, 0.03); }
+.ol-day-col:hover {
+  background: rgba(250, 204, 21, 0.03);
+}
 
 .ol-day-col.ol-col-today {
   background: rgba(250, 204, 21, 0.045);
@@ -810,12 +837,15 @@
   cursor: default;
 }
 
-.ol-day-col.ol-col-off:hover { background: rgba(8, 12, 22, 0.5); }
+.ol-day-col.ol-col-off:hover {
+  background: rgba(8, 12, 22, 0.5);
+}
 
 /* ── Hour / half-hour lines ── */
 .ol-h-line {
   position: absolute;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   height: 1px;
   background: rgba(148, 163, 184, 0.15);
   pointer-events: none;
@@ -823,7 +853,8 @@
 
 .ol-h-line-half {
   position: absolute;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   height: 1px;
   background: rgba(148, 163, 184, 0.055);
   pointer-events: none;
@@ -832,7 +863,8 @@
 /* ── Current time line ── */
 .ol-now-line {
   position: absolute;
-  left: -1px; right: 0;
+  left: -1px;
+  right: 0;
   height: 2px;
   background: #ef4444;
   pointer-events: none;
@@ -853,7 +885,8 @@
 /* ── Event block ── */
 .ol-event {
   position: absolute;
-  left: 2px; right: 2px;
+  left: 2px;
+  right: 2px;
   border-radius: 5px;
   border-left-width: 3px;
   border-left-style: solid;
@@ -865,8 +898,10 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  transition: filter 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  transition:
+    filter 0.15s ease,
+    transform 0.1s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .ol-event:hover {
@@ -875,9 +910,20 @@
   transform: scaleX(0.96);
 }
 
-.ol-event-time  { font-size: 9.5px; font-weight: 700; opacity: 0.8; }
-.ol-event-title { font-weight: 700; font-size: 10px; line-height: 1.2; }
-.ol-event-client { font-size: 9px; opacity: 0.75; }
+.ol-event-time {
+  font-size: 9.5px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+.ol-event-title {
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 1.2;
+}
+.ol-event-client {
+  font-size: 9px;
+  opacity: 0.75;
+}
 
 .ol-legend {
   display: flex;
@@ -964,12 +1010,106 @@
   color: #94a3b8 !important;
 }
 
+.ol-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.65);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.ol-modal {
+  width: min(560px, 100%);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 16px;
+  padding: 18px;
+  background: rgba(8, 12, 22, 0.98);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.42);
+  animation: garage-fade-in 0.18s ease;
+}
+
+.ol-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.ol-modal-grid label {
+  display: grid;
+  gap: 6px;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.ol-modal-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(30, 41, 59, 0.55);
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.ol-modal-summary-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ol-modal-summary-fields div {
+  padding: 2px 0;
+}
+
+.ol-modal-summary-fields strong {
+  color: #f8fafc;
+}
+
 @media (max-width: 640px) {
-  .ol-corner { width: 34px; }
-  .ol-time-gutter { width: 34px; }
-  .ol-day-head { min-width: 40px; padding: 6px 2px; }
-  .ol-day-num { width: 24px; height: 24px; font-size: 12px; }
-  .ol-week-label { min-width: 140px; font-size: 13px; }
+  .ol-modal-summary-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ol-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.ol-modal .btn {
+  min-width: 120px;
+}
+
+@media (max-width: 640px) {
+  .ol-corner {
+    width: 34px;
+  }
+  .ol-time-gutter {
+    width: 34px;
+  }
+  .ol-day-head {
+    min-width: 40px;
+    padding: 6px 2px;
+  }
+  .ol-day-num {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+  .ol-week-label {
+    min-width: 140px;
+    font-size: 13px;
+  }
 }
 
 .garage-panel .btn.btn-primary {
@@ -1026,7 +1166,11 @@
 }
 
 .garage-panel .garage-hero {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(37, 99, 235, 0.78)) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.92),
+    rgba(37, 99, 235, 0.78)
+  ) !important;
   border: 1px solid rgba(96, 165, 250, 0.32) !important;
   box-shadow: 0 24px 50px rgba(2, 6, 23, 0.28) !important;
 }
@@ -1364,7 +1508,11 @@
 }
 
 .garage-panel .ol-header-row {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.86));
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.95),
+    rgba(15, 23, 42, 0.86)
+  );
 }
 
 .garage-panel .ol-day-head {
@@ -1471,80 +1619,188 @@
   margin: 0;
 }
 
-.horaires-table {
-  width: 100%;
-  border-collapse: collapse;
+.horaires-card {
+  position: relative;
 }
 
-.horaires-row {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+.horaires-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 6, 23, 0.72);
+  border-radius: 14px;
 }
 
-.horaires-row:last-child {
-  border-bottom: none;
+.horaires-list {
+  display: grid;
+  gap: 8px;
+}
+
+.horaires-item {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.24);
+  padding: 12px 14px;
+}
+
+.horaires-summary {
+  display: grid;
+  grid-template-columns: 110px auto 1fr;
+  gap: 10px;
+  align-items: center;
+  cursor: default;
 }
 
 .horaires-day {
   font-weight: 700;
   color: #f8fafc;
-  padding: 12px 16px 12px 0;
-  min-width: 110px;
   white-space: nowrap;
 }
 
-.horaires-ferme-cell {
-  padding: 10px 12px 10px 0;
+.horaires-summary-text {
+  color: #cbd5e1;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.horaires-ferme-select {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 8px;
-  color: #f8fafc;
-  padding: 7px 12px;
+.horaires-pill {
+  justify-self: start;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.horaires-pill.is-open {
+  background: rgba(34, 197, 94, 0.12);
+  color: #86efac;
+}
+
+.horaires-pill.is-warn {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+}
+
+.horaires-pill.is-closed {
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+}
+
+.horaires-edit {
+  display: grid;
+  gap: 8px;
+}
+
+.horaires-select-wrap {
+  display: grid;
+  gap: 6px;
+}
+
+.horaires-toggle-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.horaires-select {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.72);
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
   font-size: 14px;
-  cursor: pointer;
-  min-width: 190px;
+  outline: none;
 }
 
-.horaires-ferme-select:disabled {
-  opacity: 0.75;
-  cursor: default;
+.horaires-select:focus {
+  border-color: rgba(125, 211, 252, 0.65);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
 }
 
-.horaires-times-cell {
-  padding: 10px 0;
+.horaires-select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.horaires-times {
+.horaires-toggle-wrap {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.horaires-buttons {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-.horaires-time-input {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 8px;
-  color: #f8fafc;
-  padding: 7px 10px;
-  font-size: 14px;
-  width: 110px;
+.horaires-chip {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.66);
+  color: #e2e8f0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
-.horaires-time-input:disabled {
-  opacity: 0.75;
+.horaires-chip:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(125, 211, 252, 0.5);
+}
+
+.horaires-chip:disabled {
+  opacity: 0.65;
   cursor: default;
+}
+
+.horaires-chip.active {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(74, 222, 128, 0.45);
+  color: #bbf7d0;
+}
+
+.horaires-chip-secondary.active {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(251, 191, 36, 0.5);
+  color: #fde68a;
+}
+
+.horaires-admin-note {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .horaires-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .horaires-summary-text {
+    white-space: normal;
+  }
 }
 
 @media (max-width: 700px) {
-  .horaires-times {
+  .horaires-buttons {
     flex-direction: column;
   }
-  .horaires-time-input {
+
+  .horaires-chip {
     width: 100%;
-  }
-  .horaires-day {
-    min-width: 80px;
   }
 }
