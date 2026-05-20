@@ -281,7 +281,7 @@ function RegisterForm() {
                             </div>
                         ))}
 
-                        {/* CP + VILLE COTE A COTE */}
+                        
                         <div className="row-2 mt-2">
 
                             {/* CODE POSTAL */}
