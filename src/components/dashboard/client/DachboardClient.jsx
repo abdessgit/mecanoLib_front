@@ -10,7 +10,7 @@ function parseClientDate(value) {
     if (!value) return null;
     const str = String(value).trim();
 
-    // "YYYY-MM-DD HH:mm(:ss)" -> local time
+    
     if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(str)) {
         const [d, t] = str.split(/\s+/);
         const isoLocal = `${d}T${t.length === 5 ? `${t}:00` : t}`;
@@ -360,7 +360,7 @@ export default function DashboardClient() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            //  on utilise le status renvoyé par l’API 
+        
             setRdvs(prev =>
                 prev.map(r =>
                     r.id_rdv === idRdv ? { ...r, status: data.status } : r
